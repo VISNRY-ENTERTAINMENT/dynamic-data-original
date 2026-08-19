@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dd-core"
+version = "0.3.0"
+description = "Dynamic Data — a claim store for AI project memory & hivemind (every fact is a claim with source, confidence, time, derivation, context; tamper-evident ledger)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Ezra Lewellen (VISNRY Entertainment)", email = "" }]
+# The library and CLI have ZERO runtime dependencies (pure stdlib).
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["mcp[cli]>=1.2.0"]          # the MCP server
+sign = ["cryptography>=41.0"]      # Ed25519 authenticity (verify_chain --signatures)
+test = ["pytest>=7.0"]
+polyglot = [                       # language-agnostic oracles for non-Python code
+    "tree-sitter>=0.21",
+    "tree-sitter-language-pack>=0.20",
+]
+
+[project.scripts]
+dd = "dd_cli:main"
+
+[tool.setuptools]
+packages = [
+    "dd_core",
+    "dd_core.recursive_improvement",
+    "dd_core.testkit",
+    "dd_core.codefacts",
+    "dd_core.reflex",
+]
+py-modules = ["dd_cli", "dd_mcp_server"]

@@ -1,0 +1,3 @@
+# dd_core (the library) and dd_cli have ZERO dependencies — pure Python stdlib.
+# Only the MCP server (dd_mcp_server.py) needs the MCP SDK:
+mcp[cli]>=1.2.0
