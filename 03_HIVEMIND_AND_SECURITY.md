@@ -21,7 +21,7 @@ trustworthy.
 
 ---
 
-## Two guarantees (the Ovyero split)
+## Two guarantees (the integrity/authenticity split)
 
 **Integrity — the hash chain.** Every claim is chained into an append-only
 ledger: `entry_hash = sha256(content + prev_hash)`. Edit any past claim and its
@@ -96,8 +96,8 @@ python dd_verify.py --db hive.ddb                # integrity (offline)
 python dd_verify.py --db hive.ddb --signatures   # + authenticity
 ```
 
-Exit 0 = intact, exit 1 = tampering detected (with the broken `seq`). Like
-`aios verify`, this needs no server and no vendor trust.
+Exit 0 = intact, exit 1 = tampering detected (with the broken `seq`). This
+needs no server and no vendor trust.
 
 ---
 
@@ -109,7 +109,7 @@ authorship, trust ceilings, agent registry, independent verifier, multi-agent de
 Deliberately **not yet** built (documented so nothing is silently missing):
 
 - **External anchoring** — periodically pin the ledger head to an RFC 3161
-  timestamp authority (like Ovyero → DigiCert) so history can't be backdated.
+  timestamp authority (e.g. DigiCert) so history can't be backdated.
   *Needs an external service; high value for audit.*
 - **Authorization / capability scoping** — which agents may assert which
   predicates (write ACLs), not just how much their claims weigh. *The natural
@@ -121,7 +121,7 @@ Deliberately **not yet** built (documented so nothing is silently missing):
 - **Reputation decay** — auto-adjust an agent's trust ceiling as its claims get
   overruled/retracted, instead of a static number.
 - **Data minimization / sealed claims** — never store secrets/PII in values;
-  store hashes or sealed references (Ovyero logs hashes, never source).
+  store hashes or sealed references instead of source.
 - **Online verification mode** — compare the local chain head against an
   authoritative server head to catch server-side tampering too.
 - **Sybil resistance** — bind agent registration to a vouching authority so a

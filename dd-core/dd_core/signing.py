@@ -2,11 +2,11 @@
 
 Integrity (the hash chain in store.py) proves content wasn't changed. But a
 tamperer can recompute hashes to look consistent again — so integrity alone is
-not enough (this is exactly the point Ovyero's trust model makes). Authenticity
-closes that hole: an Ed25519 signature over each ledger entry proves WHO wrote
-it, and only the holder of the private key can produce a valid signature.
+not enough. Authenticity closes that hole: an Ed25519 signature over each
+ledger entry proves WHO wrote it, and only the holder of the private key can
+produce a valid signature.
 
-Model (same shape as Ovyero /trust):
+Model:
   - Each agent has an Ed25519 keypair. The private key stays with the agent.
   - The agent signs each claim's entry_hash. The store keeps only the signature
     and the public-key fingerprint.

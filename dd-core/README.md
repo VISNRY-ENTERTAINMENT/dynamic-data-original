@@ -10,7 +10,7 @@ sourced, confidence-weighted, time-stamped claims and later asks *"what do we
 currently believe about X, and what changed?"* — instead of re-deriving project
 facts every session.
 
-> **Dynamic Data vs governance (e.g. Ovyero/AIOS)** — different layers.
+> **Dynamic Data vs a governance/policy gate** — different layers.
 > Governance governs *actions* (is this change safe/allowed?) at the gate.
 > Dynamic Data stores *beliefs* (what's true, who says so, how sure, since when).
 > Governance is the referee; Dynamic Data is the memory.
@@ -39,7 +39,7 @@ dd-core/
     signing.py        #   optional Ed25519 authenticity layer
   dd_cli.py           # command-line access
   dd_mcp_server.py    # MCP server: 18 tools, exposes the store to an AI
-  dd_verify.py        # independent tamper-evidence verifier (like `aios verify`)
+  dd_verify.py        # independent tamper-evidence verifier
   seed_exampleapp.py   # example: load a project's facts
   tests/              # 33 tests (atoms + hivemind/trust/tamper-evidence)
   pyproject.toml      # optional: pip install -e .

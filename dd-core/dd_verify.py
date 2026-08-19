@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """dd-verify — independently verify a Dynamic Data ledger's tamper-evidence.
 
-Like Ovyero's `aios verify`, this proves the audit trail yourself without
-trusting the store: it walks the append-only hash chain and reports whether any
+This proves the audit trail yourself without trusting the store: it walks
+the append-only hash chain and reports whether any
 past claim was altered (integrity), and optionally checks Ed25519 signatures
 against registered agent public keys (authenticity).
 
