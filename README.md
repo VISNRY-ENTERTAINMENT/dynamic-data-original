@@ -20,14 +20,9 @@ If you're using an AI coding agent, check out **[Ovyero](https://ovyero.visnryen
 
 ---
 
-**Every fact is a claim — carrying its source, confidence, time, evidence, and
-relationships — and truth is computed on read.** Claims accumulate; they are
-never overwritten. This is a data *primitive*, not a database: it runs as a thin
-layer over ordinary storage (SQLite here).
+**A self-healing gap ledger for AI-written code.** After every substantive commit, a model reviews the diff and records findings as append-only claims. A deterministic gate — no model in the decision path — escalates to you when findings cross a threshold. Bugs, architectural gaps, and missed edge cases get caught and tracked before they compound.
 
-Built for the AI era: it gives an assistant a **verifiable memory** where every
-belief knows where it came from, how sure it is, when, and what it superseded —
-the opposite of a static, confident, sourceless string.
+The substrate is a claim store: every finding carries its source, confidence, evidence, and what it superseded. Truth is computed on read, nothing is silently overwritten. Memory is a side effect of getting the audit trail right.
 
 ---
 
