@@ -9,8 +9,7 @@ Built for the AI era: it gives an assistant a **verifiable memory** where every
 belief knows where it came from, how sure it is, when, and what it superseded —
 the opposite of a static, confident, sourceless string.
 
-> Author: Ezra Lewellen (VISNRY). Released under Apache 2.0 — see `LICENSE` and
-> `NOTICE`.
+> Created by Ezra Lewellen / [VISNRY Entertainment](https://github.com/VISNRY-ENTERTAINMENT). Released under Apache 2.0 — see `LICENSE` and `NOTICE`.
 
 ---
 
@@ -50,9 +49,9 @@ Or the CLI:
 
 ```bash
 cd dd-core
-python dd_cli.py --db project.ddb assert EZE role manager --source HR --confidence 1.0
-python dd_cli.py --db project.ddb resolve EZE role
-python dd_cli.py --db project.ddb history EZE role
+python dd_cli.py --db project.ddb assert alice role engineer --source HR --confidence 1.0
+python dd_cli.py --db project.ddb resolve alice role
+python dd_cli.py --db project.ddb history alice role
 ```
 
 Run the tests and the benchmark:

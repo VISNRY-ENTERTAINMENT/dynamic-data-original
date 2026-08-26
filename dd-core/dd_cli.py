@@ -2,7 +2,7 @@
 """dd — command-line access to a Dynamic Data claim store.
 
 Examples:
-    python dd_cli.py --db project.ddb assert exampleapp test_pool NullPool \\
+    python dd_cli.py --db project.ddb assert myproject db_pool NullPool \\
         --source ezra --confidence 1.0 --evidence "conftest NullPool=1"
     python dd_cli.py --db project.ddb resolve exampleapp test_pool
     python dd_cli.py --db project.ddb history bob role

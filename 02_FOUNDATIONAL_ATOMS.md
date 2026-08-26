@@ -34,8 +34,7 @@ you; pick them right and capabilities you never listed fall out for free.
 1. **Proposition** — `subject · predicate · value/obj` (what is asserted).
 2. **Identity** — *which entity the subject really is* (resolved, not a bare
    string). The most foundational: conflict, provenance, and history are
-   meaningless if you can't tell two claims are about the same thing. (The EZE
-   diagram — three emails, one entity — is an identity problem.)
+   meaningless if you can't tell two claims are about the same thing. (Classic identity problem: three email addresses, one person — same_as resolves them.)
    Implemented reflexively via `same_as` claims + a canonical resolver.
 3. **Source** — who/what asserts it.
 4. **Derivation** — *what it's based on* (edges to the claims/rules it came

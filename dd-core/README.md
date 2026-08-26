@@ -72,10 +72,10 @@ from dd_core import DynamicDataStore, CredenceType, Profile
 ddb = DynamicDataStore("project.ddb")
 
 # proposition + source + confidence
-ddb.assert_claim("EZE", "role", "manager", source="HR", confidence=0.90)
+ddb.assert_claim("alice", "role", "engineer", source="HR", confidence=0.90)
 
 # identity: two labels, one entity — claims fuse
-ddb.same_as("eze@email.com", "EZE", source="HR")
+ddb.same_as("alice@example.com", "alice", source="HR")
 
 # derivation + belief revision
 p = ddb.assert_claim("dragon", "class", "reptile", source="designer", confidence=1.0)
@@ -100,9 +100,9 @@ to 1.0, disagreement raises `DeterminedConflictError`).
 ## CLI
 
 ```bash
-python dd_cli.py --db project.ddb assert EZE role manager --source HR --confidence 1.0
-python dd_cli.py --db project.ddb resolve EZE role
-python dd_cli.py --db project.ddb history EZE role
+python dd_cli.py --db project.ddb assert alice role engineer --source HR --confidence 1.0
+python dd_cli.py --db project.ddb resolve alice role
+python dd_cli.py --db project.ddb history alice role
 python dd_cli.py --db project.ddb conflicts
 ```
 

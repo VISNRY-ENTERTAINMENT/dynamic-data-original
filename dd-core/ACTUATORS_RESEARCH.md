@@ -1,6 +1,6 @@
 # Can software edit software without AI? — a research-grounded design
 
-**Question (from the scientist):** push Dynamic Data to do as much as possible so
+**Research question:** push Dynamic Data to do as much as possible so
 the AI doesn't have to — up to and including *editing and creating software
 itself, deterministically*, so we depend on AI less.
 

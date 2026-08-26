@@ -24,14 +24,14 @@ def ddb():
 # --- Atom 2: Identity ------------------------------------------------------
 def test_identity_fuses_claims_across_aliases(ddb):
     # Two names for the same entity; claims made under each must resolve together.
-    ddb.assert_claim("eze@email.com", "role", "employee", source="hr", confidence=0.72,
+    ddb.assert_claim("alice@example.com", "role", "employee", source="hr", confidence=0.72,
                      observed_at="2000-01-24T00:00:00+00:00")
-    ddb.assert_claim("EZE", "role", "manager", source="hr", confidence=0.90,
+    ddb.assert_claim("alice", "role", "manager", source="hr", confidence=0.90,
                      observed_at="2002-01-24T00:00:00+00:00")
-    ddb.same_as("eze@email.com", "EZE", source="hr")
-    res = ddb.resolve("eze@email.com", "role")     # query one alias...
+    ddb.same_as("alice@example.com", "alice", source="hr")
+    res = ddb.resolve("alice@example.com", "role")     # query one alias...
     assert res.chosen.value == "manager"           # ...sees the other alias's claim
-    assert len(ddb.history("EZE", "role")) == 2
+    assert len(ddb.history("alice", "role")) == 2
 
 
 def test_canonical_is_stable_across_aliases(ddb):

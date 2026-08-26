@@ -23,19 +23,19 @@ def ddb():
 
 
 def test_assert_and_resolve_single_claim(ddb):
-    ddb.assert_claim("EZE", "role", "manager", source="HR", confidence=1.0)
-    res = ddb.resolve("EZE", "role")
+    ddb.assert_claim("alice", "role", "manager", source="HR", confidence=1.0)
+    res = ddb.resolve("alice", "role")
     assert res.chosen.value == "manager"
     assert res.conflict is False
 
 
 def test_highest_confidence_wins(ddb):
-    ddb.assert_claim("EZE", "email", "eze@email.com", source="signup", confidence=0.72,
+    ddb.assert_claim("alice", "email", "alice@example.com", source="signup", confidence=0.72,
                      observed_at="2000-01-24T00:00:00+00:00")
-    ddb.assert_claim("EZE", "email", "mangeb@email.com", source="directory", confidence=0.90,
+    ddb.assert_claim("alice", "email", "bob@example.com", source="directory", confidence=0.90,
                      observed_at="2002-01-24T00:00:00+00:00")
-    res = ddb.resolve("EZE", "email")
-    assert res.chosen.value == "mangeb@email.com"   # .90 beats .72
+    res = ddb.resolve("alice", "email")
+    assert res.chosen.value == "bob@example.com"   # .90 beats .72
     assert res.conflict is True                     # disagreement surfaced
     assert len(res.alternatives) == 1
 
@@ -89,8 +89,8 @@ def test_idempotent_assert(ddb):
 
 
 def test_relationships(ddb):
-    ddb.assert_claim("EZE", "part_of", None, obj="Managers", source="HR", confidence=0.90)
-    rels = ddb.relationships("EZE")
+    ddb.assert_claim("alice", "part_of", None, obj="Managers", source="HR", confidence=0.90)
+    rels = ddb.relationships("alice")
     assert len(rels) == 1
     assert rels[0].obj == "Managers"
     assert rels[0].predicate == "part_of"
