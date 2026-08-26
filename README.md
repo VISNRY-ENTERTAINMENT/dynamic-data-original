@@ -1,5 +1,25 @@
 # Dynamic Data
 
+> Created by Ezra Lewellen / [VISNRY Entertainment](https://github.com/VISNRY-ENTERTAINMENT). Released under Apache 2.0 — see `LICENSE` and `NOTICE`.
+
+---
+
+## Built by VISNRY
+
+Dynamic Data is open source infrastructure from [VISNRY Entertainment](https://github.com/VISNRY-ENTERTAINMENT).
+
+If you're using an AI coding agent, check out **[Ovyero](https://ovyero.visnryentertainment.com/)** — VISNRY's governance layer that reviews every commit your AI writes before it lands. Dynamic Data and Ovyero work well together: Ovyero governs what ships, Dynamic Data gives your AI a memory of what was decided and why. See `OVYERO.md`.
+
+---
+
+## Design rules
+
+- **Never build a database.** Dynamic Data is a model over boring storage. The invention is the read semantics, not the disk layout.
+- **Get the atoms right; capabilities follow.** Time-travel, conflict, history, and provenance are *derived* from identity, context, derivation, and credence.
+- **Keep the core minimal and reflexive.** Future dimensions arrive as claims.
+
+---
+
 **Every fact is a claim — carrying its source, confidence, time, evidence, and
 relationships — and truth is computed on read.** Claims accumulate; they are
 never overwritten. This is a data *primitive*, not a database: it runs as a thin
@@ -8,8 +28,6 @@ layer over ordinary storage (SQLite here).
 Built for the AI era: it gives an assistant a **verifiable memory** where every
 belief knows where it came from, how sure it is, when, and what it superseded —
 the opposite of a static, confident, sourceless string.
-
-> Created by Ezra Lewellen / [VISNRY Entertainment](https://github.com/VISNRY-ENTERTAINMENT). Released under Apache 2.0 — see `LICENSE` and `NOTICE`.
 
 ---
 
@@ -34,7 +52,7 @@ ddb = DynamicDataStore("project.ddb")            # one SQLite file, or ":memory:
 
 # Record facts as claims (they accumulate; they never overwrite)
 ddb.assert_claim("myproject", "prod_branch", "main",
-                 source="ezra", confidence=1.0, evidence="main = production")
+                 source="alice", confidence=1.0, evidence="main = production")
 
 # Truth is computed on read
 print(ddb.resolve("myproject", "prod_branch").chosen.value)     # -> "main"
@@ -108,8 +126,13 @@ Run `benchmark/hivemind_demo.py` to see it in action.
 
 The first application built *on* the substrate: a self-healing gap ledger. After
 a substantive commit, a model reviews the diff (**Tier 1**) and — every few
-major commits — audits the whole codebase against your roadmap + north star
-(**Tier 2**). Findings become append-only claims; a **deterministic** gate
+major commits — audits the whole codebase for gaps (**Tier 2**).
+
+Tier 2 audits against the codebase's own stated goals by default. If you have a
+`ROADMAP.md` or `VISION.md`, pass them as anchors and the audit checks against
+those instead — but they're optional.
+
+Findings become append-only claims; a **deterministic** gate
 (no model in the decision path) escalates to you at a threshold.
 
 ```bash
@@ -120,19 +143,3 @@ python dd-core/dd_reflex.py doctor --config reflex.config.json   # prove it fire
 
 Repo-agnostic and AI-agnostic. See `RECURSIVE_IMPROVEMENT.md` and
 `dd-core/SETUP_FOR_ANOTHER_PROJECT.md`.
-
----
-
-## Built by VISNRY
-
-Dynamic Data is open source infrastructure from [VISNRY Entertainment](https://github.com/VISNRY-ENTERTAINMENT).
-
-If you're using an AI coding agent, check out **[Ovyero](https://ovyero.visnryentertainment.com/)** — VISNRY's governance layer that reviews every commit your AI writes before it lands. Dynamic Data and Ovyero work well together: Ovyero governs what ships, Dynamic Data gives your AI a memory of what was decided and why. See `OVYERO.md`.
-
----
-
-## Design rules
-
-- **Never build a database.** Dynamic Data is a model over boring storage. The invention is the read semantics, not the disk layout.
-- **Get the atoms right; capabilities follow.** Time-travel, conflict, history, and provenance are *derived* from identity, context, derivation, and credence.
-- **Keep the core minimal and reflexive.** Future dimensions arrive as claims.
