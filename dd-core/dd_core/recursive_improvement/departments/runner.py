@@ -12,6 +12,8 @@ Department -> oracle mapping:
   architecture  -- architecture_probe.run_architecture_probes (needs manifest)
   dependency    -- dependency_probe.run_dependency_probes (per-commit: changed files only)
   contract      -- existing invariants.py + contracts.py (manifest-driven)
+  reachability  -- reachability_probe.run_reachability_probes (exported-never-consumed)
+  billing       -- billing_probe.run_billing_probes (billing-path-filtered)
   goal_alignment-- no deterministic oracle; handled by Tier-1 charter lens
 
 goal_alignment has no deterministic oracle: it requires reasoning about intent
@@ -142,6 +144,30 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 _run_contract_dept(cfg, ddb, sha, status_lines)
             except Exception as e:
                 print(f"[departments] contract probe error: {e}", file=sys.stderr)
+
+        # ---- Reachability (exported-but-never-consumed) ----
+        if _enabled(cfg, "reachability"):
+            try:
+                from dd_core.recursive_improvement.departments.reachability_probe import (
+                    run_reachability_probes,
+                )
+                findings = run_reachability_probes(repo_root)
+                new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-reach", current_slugs)
+                _run_gate(cfg, ddb, status_lines, "reachability", new, dup, reop, supp)
+            except Exception as e:
+                print(f"[departments] reachability probe error: {e}", file=sys.stderr)
+
+        # ---- Billing (billing-path-filtered enforcement patterns) ----
+        if _enabled(cfg, "billing"):
+            try:
+                from dd_core.recursive_improvement.departments.billing_probe import (
+                    run_billing_probes,
+                )
+                findings = run_billing_probes(repo_root)
+                new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-billing", current_slugs)
+                _run_gate(cfg, ddb, status_lines, "billing", new, dup, reop, supp)
+            except Exception as e:
+                print(f"[departments] billing probe error: {e}", file=sys.stderr)
 
         # ---- Probe-based auto-close ----
         # Any open arch.gap claim whose slug is absent from this run's findings

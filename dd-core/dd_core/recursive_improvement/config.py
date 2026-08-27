@@ -131,6 +131,25 @@ class ReflexConfig:
     reviewer_charter: str = ""
     auditor_charter: str = ""
 
+    # --- charter lenses (doctrine injection, per tier) ---
+    # Paths (repo-relative or absolute) to doctrine/reference documents whose
+    # content is appended to the charter text at prompt-build time. This turns
+    # "read the doc and forget it" knowledge into standing review doctrine the
+    # model reasons with on every run -- WITHOUT converting judgment-based
+    # guidance into brittle regex probes.
+    #
+    # Deliberately split per tier because cost scales differently:
+    #   tier1_lenses -- Tier-1 runs per-commit on the cheap/fast model; keep
+    #                   this list short and high-signal (1-2 docs max).
+    #   tier2_lenses -- Tier-2 runs every N commits on the stronger model;
+    #                   it can afford the full doctrine sweep, including the
+    #                   expensive judgment lenses (scope/decision boundaries,
+    #                   verification discipline, billing-model reasoning).
+    # A lens file that doesn't exist is skipped silently (a missing doc must
+    # never break governance runs).
+    tier1_lenses: tuple = ()
+    tier2_lenses: tuple = ()
+
     # --- claim namespaces + provenance ---
     review_source: str = "reflex-reviewer"
     audit_source: str = "reflex-auditor"
@@ -171,6 +190,11 @@ class ReflexConfig:
     #   "architecture"  -- architecture_rules.json manifest enforcement
     #   "dependency"    -- manifest parsing, unpinned versions, missing lockfiles
     #   "contract"      -- invariants.json + contracts.json manifest enforcement
+    #   "reachability"  -- exported/__all__ names never referenced outside their
+    #                      own file + tests: "correct, tested, never executed"
+    #   "billing"       -- billing-path-filtered enforcement patterns (calendar-
+    #                      month cycle keys, missing dunning states, unidempotent
+    #                      usage recording, silent config no-ops)
     #   "goal_alignment"-- no deterministic oracle; handled by Tier-1 model lens
     departments: tuple = ()  # empty = all enabled
 
@@ -264,7 +288,7 @@ class ReflexConfig:
                 data["repo_root"] = os.path.normpath(os.path.join(cfg_dir, rr))
         known = {f.name for f in fields(cls)}
         tu = {"substantive_prefixes", "ignored_prefixes", "north_star_anchors",
-              "cmd_template", "departments"}
+              "cmd_template", "departments", "tier1_lenses", "tier2_lenses"}
         clean = {k: (tuple(v) if k in tu and v is not None else v)
                  for k, v in data.items() if k in known}
         return cls(**clean)

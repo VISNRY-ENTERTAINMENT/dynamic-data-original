@@ -281,8 +281,56 @@ def unguarded_background_tasks(repo_root: str) -> list[dict]:
 # public entry point
 # ---------------------------------------------------------------------------
 
+# Per-file rollup threshold: when one file produces more than this many
+# findings of the SAME pattern, they collapse into ONE aggregate finding per
+# (file, pattern). Rationale (from a real deployment): a single low-precision
+# pattern produced ~200 individual claims across a mature codebase, burying
+# the handful of genuinely interesting findings under noise -- an ignored
+# ledger is worse than no ledger, because it looks like coverage. Past this
+# threshold the signal is "this FILE has a systemic pattern problem", which
+# is one finding, not N.
+_ROLLUP_THRESHOLD = 3
+
+
+def _rollup(findings: list[dict]) -> list[dict]:
+    """Collapse >_ROLLUP_THRESHOLD same-pattern findings per file into one."""
+    by_group: dict[tuple, list[dict]] = {}
+    for f in findings:
+        # slug shape: obs-<label>-<file-slug>-<lineno>; group by (area, label)
+        label = "-".join(f.get("slug", "").split("-")[:3])
+        by_group.setdefault((f.get("area", ""), label), []).append(f)
+
+    out: list[dict] = []
+    for (area, label), group in by_group.items():
+        if len(group) <= _ROLLUP_THRESHOLD:
+            out.extend(group)
+            continue
+        linenos = sorted(
+            int(f["slug"].rsplit("-", 1)[-1]) for f in group
+            if f["slug"].rsplit("-", 1)[-1].isdigit()
+        )
+        first = group[0]
+        safe = re.sub(r"[^a-z0-9]+", "-", area.lower()).strip("-")
+        out.append({
+            "slug": f"{label}-{safe}-rollup",
+            "title": (f"{len(group)}x {label.removeprefix('obs-')} in {area} "
+                      f"(lines {', '.join(map(str, linenos[:8]))}"
+                      f"{', ...' if len(linenos) > 8 else ''}) -- systemic "
+                      f"pattern, rolled up into one finding"),
+            "area": area,
+            "severity": first.get("severity", "medium"),
+            "confidence": first.get("confidence", 0.70),
+            "evidence": f"{area}: {len(group)} occurrences",
+            "proposed_action": (
+                f"fix as ONE batch pass across this file, not {len(group)} "
+                f"individual tickets: " + first.get("proposed_action", "")
+            ),
+        })
+    return out
+
+
 def run_observability_probes(repo_root: str) -> list[dict]:
-    """All observability department findings."""
+    """All observability department findings (same-pattern-per-file rolled up)."""
     out: list[dict] = []
     for oracle in (
         bare_exception_swallows_py,
@@ -295,4 +343,4 @@ def run_observability_probes(repo_root: str) -> list[dict]:
             out += oracle(repo_root)
         except Exception:
             pass
-    return out
+    return _rollup(out)

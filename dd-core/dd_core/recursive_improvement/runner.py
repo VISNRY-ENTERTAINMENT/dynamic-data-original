@@ -190,6 +190,28 @@ def _intent_context(cfg: ReflexConfig) -> str:
             f"arch.gap:alignment-<slug>.\n")
 
 
+def _lens_context(cfg: ReflexConfig, lens_paths: tuple) -> str:
+    """Doctrine injection: append the content of configured lens documents to
+    the prompt as standing review doctrine. Turns reference docs the model
+    would otherwise 'read and forget' into context it reasons with on every
+    run. A missing/unreadable lens file is skipped silently -- doctrine must
+    never break a governance run."""
+    if not lens_paths:
+        return ""
+    parts = []
+    for p in lens_paths:
+        try:
+            text = open(cfg.abspath(p), encoding="utf-8").read()
+        except Exception:
+            continue
+        parts.append(f"--- LENS: {p} ---\n{text}")
+    if not parts:
+        return ""
+    return ("\n\nREVIEW DOCTRINE (apply these lenses to everything above; "
+            "they define failure classes this project has actually hit):\n\n"
+            + "\n\n".join(parts) + "\n")
+
+
 def run_tier1(cfg: ReflexConfig, sha: str) -> str | None:
     diff = _git(cfg.repo_root, ["show", "--stat", "--patch", "--no-color", "-M", sha])
     if len(diff) > cfg.max_diff_chars:
@@ -199,7 +221,8 @@ def run_tier1(cfg: ReflexConfig, sha: str) -> str | None:
               f"ONLY the JSON array of gaps (or []).\n\nCOMMIT {sha}\n"
               f"MESSAGE:\n{msg}\n\nDIFF:\n{diff}\n"
               + _known_findings_context(cfg)
-              + _intent_context(cfg))
+              + _intent_context(cfg)
+              + _lens_context(cfg, cfg.tier1_lenses))
     raw = _run_model(cfg, prompt, cfg.resolved_review_model(),
                      cfg.reviewer_charter_path(), cfg.review_timeout)
     if raw is None:
@@ -261,7 +284,8 @@ def run_tier2(cfg: ReflexConfig, sha: str) -> str | None:
               f"NORTH-STAR ANCHORS:\n{anchors}\n\nRECENT COMMITS:\n{recent}\n"
               + _learn.antipattern_hints(cfg)
               + _learn.false_positive_hints(cfg)
-              + _known_findings_context(cfg))
+              + _known_findings_context(cfg)
+              + _lens_context(cfg, cfg.tier2_lenses))
     raw = _run_model(cfg, prompt, cfg.resolved_audit_model(),
                      cfg.auditor_charter_path(), cfg.audit_timeout)
     if raw is None:
