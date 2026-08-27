@@ -1,78 +1,111 @@
 # Dynamic Data
 
-**Automatic bug-catching for AI-written code.** After every commit, a model reviews the diff, finds gaps and bugs, and records them as traceable findings. A deterministic gate — no model in the escalation path — surfaces issues to you when they hit a threshold.
+An AI-agnostic software governance system. Sits outside any project, fires on commit via git hooks, runs a separate AI through structured review "departments", and logs every finding in a claim-based reflex ledger.
 
-One command wires it into any repo:
+## How it works
+
+1. A git hook fires after each commit in the governed repo.
+2. **Deterministic department probes** scan the diff immediately — no model, no cost, instant.
+3. **Tier-1 model review** reads the diff + any open findings and records new gaps.
+4. Every finding lands in `reflex.ddb` — an append-only SQLite claim store. Truth is computed on read; nothing is ever overwritten.
+5. When MAJOR findings (high/critical) are open, the **prepare-commit-msg hook** injects a `REFLEX WARNINGS` block into the building AI's next commit message — informational, never blocking.
+6. When a finding's pattern is no longer detected, **probe-based auto-close** marks it fixed automatically. When the AI commits with `Closes arch.gap:<slug>`, the ledger closes it too.
+
+## Departments
+
+| Department | What it catches | Oracle |
+|---|---|---|
+| **security** | Hardcoded secrets, shell injection, unsafe deserialization, path traversal | Deterministic regex, multi-language |
+| **debt** | TODO/FIXME/HACK markers, `raise NotImplementedError` stubs, empty functions | Deterministic regex |
+| **observability** | Bare `except: pass`, unguarded background tasks, discarded Go errors | Deterministic regex |
+| **architecture** | Layer violations, forbidden imports, required files (`architecture_rules.json`) | Deterministic manifest |
+| **dependency** | Unpinned versions (`==*`, `latest`, `>=0.0`), missing lockfiles | Deterministic manifest parser |
+| **contract** | Invariant and payload contract violations (`invariants.json`, `contracts.json`) | Deterministic manifest |
+| **goal_alignment** | Intent drift, commit message mismatch | Tier-1 model lens (no deterministic oracle) |
+
+## Setup
+
+### 1. Clone this repo alongside the project you want to govern
+
+```
+your-project/
+dynamic-data-master/   ← this repo
+```
+
+### 2. Drop a `reflex.config.json` in your project root
+
+```json
+{
+  "repo_root": ".",
+  "gap_db": "reflex.ddb",
+  "provider": "claude",
+  "review_model": "",
+  "audit_model": "",
+  "dd_core_path": "../dynamic-data-master/dd-core",
+  "departments": [],
+  "architecture_rules": "architecture_rules.json",
+  "departments_on_all_commits": false
+}
+```
+
+`"departments": []` enables all departments. To restrict: `["security", "debt"]`.
+
+### 3. Install the hooks
+
+Run from your project root:
+
+```
+python ../dynamic-data-master/install_hooks.py
+```
+
+Installs two hooks idempotently (chains with any existing hook content):
+- **`post-commit`** — runs department probes + Tier-1 model review
+- **`prepare-commit-msg`** — injects `REFLEX WARNINGS` when MAJOR findings are open
+
+### 4. Optionally add `architecture_rules.json`
+
+```json
+{
+  "rules": [
+    {
+      "id": "no-route-to-db-direct",
+      "type": "no_import",
+      "from_glob": "app/routes.py",
+      "forbidden_import": "db.",
+      "severity": "high"
+    },
+    {
+      "id": "must-have-readme",
+      "type": "required_file",
+      "path": "README.md",
+      "severity": "low"
+    }
+  ]
+}
+```
+
+Rule types: `no_import`, `no_pattern`, `naming_rule`, `required_file`.
+
+## Claim lifecycle
+
+```
+open  →  escalated  →  fixed
+                    →  wontfix
+```
+
+- **Auto-closed by probe**: pattern absent from scan → `fixed` asserted automatically
+- **Auto-closed by commit message**: `Closes arch.gap:<slug>` in message → `fixed`
+- **Manual**: `ddb.assert_claim("arch.gap:<slug>", "status", "wontfix", ...)`
+
+## Viewing the backlog
 
 ```bash
-python dd-core/dd_reflex.py init --repo-root .
-python dd-core/dd_reflex.py doctor --config reflex.config.json   # prove it fires
+python dd-core/dd_reflex.py show --db reflex.ddb
 ```
-
-From that point on, every substantive commit triggers a Tier-1 diff review. Every few major commits a Tier-2 whole-codebase audit runs. Findings accumulate in an append-only ledger — nothing is silently dropped or overwritten.
-
-> Created by Ezra Lewellen / [VISNRY Entertainment](https://github.com/VISNRY-ENTERTAINMENT). Released under Apache 2.0 — see `LICENSE` and `NOTICE`.
-
----
-
-## Built by VISNRY
-
-Dynamic Data is open source infrastructure from [VISNRY Entertainment](https://github.com/VISNRY-ENTERTAINMENT).
-
-If you're using an AI coding agent, check out **[Ovyero](https://ovyero.visnryentertainment.com/)** — VISNRY's governance layer that reviews every commit your AI writes before it lands. Dynamic Data and Ovyero complement each other: Ovyero gates what ships, Dynamic Data tracks what was found and why. See `OVYERO.md`.
-
----
-
-## How the reflex loop works
-
-Two tiers run automatically via a git hook:
-
-**Tier 1 — diff review** (every substantive commit): a model reads the diff and records findings: bugs, missing error handling, broken contracts, edge cases. Fast, per-commit.
-
-**Tier 2 — whole-codebase audit** (every N commits): a model reads across the full codebase and audits architecture against its own stated goals — or against a `ROADMAP.md` / `VISION.md` if you have one. Neither is required.
-
-Findings are stored as **claims** — each carries its source, confidence, evidence, and what it superseded. A deterministic gate counts open findings and escalates to you at a threshold. No model decides whether to escalate; that logic is plain code.
-
-See `RECURSIVE_IMPROVEMENT.md` for full setup and `dd-core/SETUP_FOR_ANOTHER_PROJECT.md` to wire it into an existing repo.
-
----
-
-## What's here
-
-| Path | What it is |
-|---|---|
-| `dd-core/` | The implementation — library, CLI, git hook, MCP server. **v0.3.0.** |
-| `RECURSIVE_IMPROVEMENT.md` | Full reflex loop docs — setup, tiers, escalation, config. Start here. |
-| `OVYERO.md` | About Ovyero and how it pairs with Dynamic Data. |
-| `benchmark/` | Grounding benchmark (static 1/7 vs dynamic 7/7) and hivemind demo. |
-
----
-
-## The claim store (the substrate)
-
-Findings are durable because the underlying store is designed for it. Every fact is a **claim**:
-
-- carries its source, confidence, evidence, and derivation
-- accumulates — never overwrites
-- truth is computed on read (conflicts surface, not silently resolve)
-- append-only, tamper-evident ledger (`verify_chain` / `python dd_verify.py`)
-
-You can also use the store directly — as an AI's verifiable memory, a shared multi-agent ledger, or anywhere you want facts with audit trails. The MCP server exposes 18 tools for this (`assert_claim`, `resolve`, `history`, `list_conflicts`, and more).
-
-```python
-import sys; sys.path.insert(0, "dd-core")
-from dd_core import DynamicDataStore
-
-ddb = DynamicDataStore("project.ddb")
-ddb.assert_claim("myproject", "prod_branch", "main",
-                 source="alice", confidence=1.0, evidence="main = production")
-print(ddb.resolve("myproject", "prod_branch").chosen.value)  # -> "main"
-```
-
----
 
 ## Design rules
 
-- **Never build a database.** Dynamic Data is a model over boring storage. The invention is the read semantics, not the disk layout.
-- **Get the atoms right; capabilities follow.** Time-travel, conflict, history, and provenance are *derived* from identity, context, derivation, and credence.
-- **Keep the core minimal and reflexive.** Future dimensions arrive as claims.
+- **No model in the write/escalate path.** Models suggest; deterministic code decides status.
+- **Append-only.** Every claim is timestamped and sourced. Nothing is deleted or overwritten.
+- **AI-model-agnostic.** Any CLI that reads a prompt from stdin works. No SDK names in engine code.
+- **Non-blocking.** The commit message warning is informational. Commits always go through.

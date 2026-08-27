@@ -157,6 +157,38 @@ class ReflexConfig:
     record_attack_probe_findings: bool = False
     attack_probe_source: str = "reflex-attack-probe"
 
+    # --- department probes (departments/ package) ---
+    # Controls which of the seven governance departments are active.
+    # Empty tuple (the default) = ALL departments enabled -- backwards-compatible
+    # because no existing project has this key, so upgrading silently turns all
+    # departments on. To disable specific departments, list only the ones you
+    # want: ("security", "debt") enables only those two.
+    #
+    # Valid department names:
+    #   "security"      -- hardcoded secrets, injection, deserialization, etc.
+    #   "debt"          -- TODO/FIXME/stub/NotImplementedError markers
+    #   "observability" -- bare exception swallows, unguarded background tasks
+    #   "architecture"  -- architecture_rules.json manifest enforcement
+    #   "dependency"    -- manifest parsing, unpinned versions, missing lockfiles
+    #   "contract"      -- invariants.json + contracts.json manifest enforcement
+    #   "goal_alignment"-- no deterministic oracle; handled by Tier-1 model lens
+    departments: tuple = ()  # empty = all enabled
+
+    # Path to the architecture rules manifest (repo-relative).
+    # Only used when "architecture" department is enabled.
+    architecture_rules: str = "architecture_rules.json"
+
+    # Intent predicate used by the goal_alignment department.
+    # The Tier-1 reviewer resolves this claim from the store and injects it into
+    # the prompt when present. Authors assert it before starting a build via:
+    #   ddb.assert_claim("session.intent", cfg.intent_predicate, "...", source="ai")
+    intent_predicate: str = "planned_change"
+
+    # Whether to run department probes even on non-substantive commits (e.g.
+    # docs-only changes). False by default: department probes run only when
+    # the commit is already substantive (same gate as Tier-1).
+    departments_on_all_commits: bool = False
+
     # ---------------- derived helpers ----------------
     def _preset(self) -> dict:
         return PROVIDER_PRESETS.get(self.provider, PROVIDER_PRESETS["generic"])
@@ -232,7 +264,7 @@ class ReflexConfig:
                 data["repo_root"] = os.path.normpath(os.path.join(cfg_dir, rr))
         known = {f.name for f in fields(cls)}
         tu = {"substantive_prefixes", "ignored_prefixes", "north_star_anchors",
-              "cmd_template"}
+              "cmd_template", "departments"}
         clean = {k: (tuple(v) if k in tu and v is not None else v)
                  for k, v in data.items() if k in known}
         return cls(**clean)

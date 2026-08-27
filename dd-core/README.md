@@ -10,7 +10,7 @@ sourced, confidence-weighted, time-stamped claims and later asks *"what do we
 currently believe about X, and what changed?"* — instead of re-deriving project
 facts every session.
 
-> **Dynamic Data vs a governance/policy gate** — different layers.
+> **Dynamic Data vs governance (e.g. Ovyero/AIOS)** — different layers.
 > Governance governs *actions* (is this change safe/allowed?) at the gate.
 > Dynamic Data stores *beliefs* (what's true, who says so, how sure, since when).
 > Governance is the referee; Dynamic Data is the memory.
@@ -39,8 +39,8 @@ dd-core/
     signing.py        #   optional Ed25519 authenticity layer
   dd_cli.py           # command-line access
   dd_mcp_server.py    # MCP server: 18 tools, exposes the store to an AI
-  dd_verify.py        # independent tamper-evidence verifier
-  seed_exampleapp.py   # example: load a project's facts
+  dd_verify.py        # independent tamper-evidence verifier (like `aios verify`)
+  seed_worldstak.py   # example: load a project's facts
   tests/              # 33 tests (atoms + hivemind/trust/tamper-evidence)
   pyproject.toml      # optional: pip install -e .
 ```
@@ -55,7 +55,7 @@ ddb = DynamicDataStore("hive.ddb")
 
 key = signing.AgentKey.generate()                 # an agent's Ed25519 identity
 ddb.register_agent("scout", trust_ceiling=0.3, public_key=key.public_hex)
-ddb.assert_claim("exampleapp", "head", "abc", source="scout",
+ddb.assert_claim("worldstak", "head", "abc", source="scout",
                  confidence=1.0, signer=key)        # signed + trust-capped
 ddb.verify_chain(check_signatures=True)             # integrity + authenticity
 ```
@@ -72,10 +72,10 @@ from dd_core import DynamicDataStore, CredenceType, Profile
 ddb = DynamicDataStore("project.ddb")
 
 # proposition + source + confidence
-ddb.assert_claim("alice", "role", "engineer", source="HR", confidence=0.90)
+ddb.assert_claim("EZE", "role", "manager", source="HR", confidence=0.90)
 
 # identity: two labels, one entity — claims fuse
-ddb.same_as("alice@example.com", "alice", source="HR")
+ddb.same_as("eze@email.com", "EZE", source="HR")
 
 # derivation + belief revision
 p = ddb.assert_claim("dragon", "class", "reptile", source="designer", confidence=1.0)
@@ -100,9 +100,9 @@ to 1.0, disagreement raises `DeterminedConflictError`).
 ## CLI
 
 ```bash
-python dd_cli.py --db project.ddb assert alice role engineer --source HR --confidence 1.0
-python dd_cli.py --db project.ddb resolve alice role
-python dd_cli.py --db project.ddb history alice role
+python dd_cli.py --db project.ddb assert EZE role manager --source HR --confidence 1.0
+python dd_cli.py --db project.ddb resolve EZE role
+python dd_cli.py --db project.ddb history EZE role
 python dd_cli.py --db project.ddb conflicts
 ```
 

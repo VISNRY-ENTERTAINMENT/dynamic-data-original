@@ -28,7 +28,7 @@ It is memory, not a governance gate — it stores *beliefs*, it does not police
 `dd-core` is self-contained. Either:
 
 - **Reference it in place** (simplest): use the copy at
-  `exampleApp_resources/dynamic data/dd-core`, or
+  `worldStak_resources/dynamic data/dd-core`, or
 - **Copy the `dd-core/` folder** into the other project (e.g. `tools/dd-core/`).
 
 The library (`dd_core/`) and CLI (`dd_cli.py`) are **pure Python stdlib — zero

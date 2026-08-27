@@ -8,7 +8,7 @@ version = "0.3.0"
 description = "Dynamic Data — a claim store for AI project memory & hivemind (every fact is a claim with source, confidence, time, derivation, context; tamper-evident ledger)."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "Apache-2.0" }
+license = { text = "Proprietary — VISNRY, all rights reserved" }
 authors = [{ name = "Ezra Lewellen (VISNRY Entertainment)", email = "" }]
 # The library and CLI have ZERO runtime dependencies (pure stdlib).
 dependencies = []
@@ -33,4 +33,4 @@ packages = [
     "dd_core.codefacts",
     "dd_core.reflex",
 ]
-py-modules = ["dd_cli", "dd_mcp_server"]
+py-modules = ["dd_cli", "dd_mcp_server", "seed_worldstak"]

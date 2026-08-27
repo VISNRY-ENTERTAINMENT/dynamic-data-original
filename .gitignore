@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Dynamic Data ledgers are DATA, not source -- never commit them.
+# (This dir holds the live worldstak.ddb + its .bak.)
+*.ddb
+*.ddb.bak
+*.pre-v03.bak
+*.db
+*.db-shm
+*.db-wal
+
+# OS / editor
+.DS_Store
+Thumbs.db

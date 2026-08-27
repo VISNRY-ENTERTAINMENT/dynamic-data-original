@@ -5,7 +5,7 @@ dependency param, or an Optional dataclass field) and USED (read/consumed
 somewhere), but nothing ever PROVIDES it -- no caller passes it, no builder
 assigns it. Each individual file looks correct; the gap only exists in the
 cross-file wiring, which is exactly where a single-diff review (and the model)
-is blind. Real ExampleApp cases this catches: an identity-matching coordinator
+is blind. Real WorldStak cases this catches: an identity-matching coordinator
 accepted but never constructed; a `truth_mode_state` field read by every guard
 but never assigned in a builder.
 

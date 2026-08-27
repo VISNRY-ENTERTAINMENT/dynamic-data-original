@@ -163,6 +163,33 @@ def _known_findings_context(cfg: ReflexConfig, limit: int = 250) -> str:
 # --------------------------------------------------------------------------
 # Tier 1 -- per-commit diff review
 # --------------------------------------------------------------------------
+def _intent_context(cfg: ReflexConfig) -> str:
+    """Inject any open session.intent claims so the Tier-1 reviewer can check
+    goal alignment: did the diff match what the author said they were building?
+    Returns empty string if no intent claims are present (goal alignment
+    degrades gracefully to diff-vs-message check)."""
+    predicate = getattr(cfg, "intent_predicate", "planned_change")
+    try:
+        ddb = _load_store(cfg)
+        hist = ddb.history("session.intent", predicate)
+        ddb.close()
+    except Exception:
+        return ""
+    if not hist:
+        return ""
+    # Only the most recent open intent claim is relevant
+    latest = sorted(hist, key=lambda c: (getattr(c, "seq", 0),
+                                         getattr(c, "recorded_at", "")))[-1]
+    val = getattr(latest, "value", None)
+    if not val:
+        return ""
+    return (f"\n\nGOAL ALIGNMENT -- the author stated this intent before building:\n"
+            f"  \"{val}\"\n"
+            f"Check whether the diff actually implements this. If it diverges "
+            f"(implements a different or narrower interpretation), flag it as "
+            f"arch.gap:alignment-<slug>.\n")
+
+
 def run_tier1(cfg: ReflexConfig, sha: str) -> str | None:
     diff = _git(cfg.repo_root, ["show", "--stat", "--patch", "--no-color", "-M", sha])
     if len(diff) > cfg.max_diff_chars:
@@ -171,7 +198,8 @@ def run_tier1(cfg: ReflexConfig, sha: str) -> str | None:
     prompt = (f"A commit just shipped. Review it per your charter and output "
               f"ONLY the JSON array of gaps (or []).\n\nCOMMIT {sha}\n"
               f"MESSAGE:\n{msg}\n\nDIFF:\n{diff}\n"
-              + _known_findings_context(cfg))
+              + _known_findings_context(cfg)
+              + _intent_context(cfg))
     raw = _run_model(cfg, prompt, cfg.resolved_review_model(),
                      cfg.reviewer_charter_path(), cfg.review_timeout)
     if raw is None:
@@ -380,7 +408,24 @@ def run_post_commit(cfg: ReflexConfig, sha: str | None = None) -> int:
         except Exception as e:
             print(f"[reflex] autoclose skipped: {e}", file=sys.stderr)
 
-        if not _is_substantive(cfg, _changed_files(cfg.repo_root, sha)):
+        changed = _changed_files(cfg.repo_root, sha)
+        is_substantive = _is_substantive(cfg, changed)
+
+        # Department probes: run on substantive commits (or all commits if
+        # cfg.departments_on_all_commits is True). Deterministic, no model.
+        run_depts = is_substantive or getattr(cfg, "departments_on_all_commits", False)
+        if run_depts:
+            try:
+                from dd_core.recursive_improvement.departments.runner import (
+                    run_department_probes,
+                )
+                dept_lines = run_department_probes(cfg, sha, changed)
+                for line in dept_lines:
+                    print(line)
+            except Exception as e:
+                print(f"[reflex] department probes skipped: {e}", file=sys.stderr)
+
+        if not is_substantive:
             return 0
         r1 = run_tier1(cfg, sha)
         if r1:

@@ -16,7 +16,7 @@ class ReferenceStore:
 
 
 class DriftyStore:
-    """A backend with the exact ExampleApp-style drift: it silently drops a
+    """A backend with the exact WorldStak-style drift: it silently drops a
     field (`merged`) and rounds confidence to 2dp on persist."""
 
     def upsert_and_read(self, name, confidence):
