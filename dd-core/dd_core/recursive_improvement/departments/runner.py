@@ -72,8 +72,16 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
     status_lines: list[str] = []
     repo_root = cfg.repo_root
 
-    # Collect all slugs produced this run for probe-based auto-close later
+    # Slugs produced this run, and the SOURCES whose probes completed without
+    # error. Auto-close may only touch findings recorded by a source that both
+    # (a) ran this cycle and (b) finished cleanly -- a crashed probe contributes
+    # zero slugs, which is indistinguishable from "found nothing", and treating
+    # crash-as-clean would close every finding of that department as fixed.
+    # Findings from OTHER sources (Tier-1 reviewer, Tier-2 auditor, attack
+    # probe, manual entries) are NEVER touched by probe auto-close: no probe
+    # can attest to their absence.
     current_slugs: set[str] = set()
+    completed_sources: set[str] = set()
 
     try:
         # ---- Security ----
@@ -85,6 +93,7 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 findings = run_security_probes(repo_root)
                 new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-security", current_slugs)
                 _run_gate(cfg, ddb, status_lines, "security", new, dup, reop, supp)
+                completed_sources.add("reflex-security")
             except Exception as e:
                 print(f"[departments] security probe error: {e}", file=sys.stderr)
 
@@ -97,6 +106,7 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 findings = run_debt_probes(repo_root)
                 new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-debt", current_slugs)
                 _run_gate(cfg, ddb, status_lines, "debt", new, dup, reop, supp)
+                completed_sources.add("reflex-debt")
             except Exception as e:
                 print(f"[departments] debt probe error: {e}", file=sys.stderr)
 
@@ -109,6 +119,7 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 findings = run_observability_probes(repo_root)
                 new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-obs", current_slugs)
                 _run_gate(cfg, ddb, status_lines, "observability", new, dup, reop, supp)
+                completed_sources.add("reflex-obs")
             except Exception as e:
                 print(f"[departments] observability probe error: {e}", file=sys.stderr)
 
@@ -123,6 +134,7 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 findings = run_architecture_probes(repo_root, manifest_path)
                 new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-arch", current_slugs)
                 _run_gate(cfg, ddb, status_lines, "architecture", new, dup, reop, supp)
+                completed_sources.add("reflex-arch")
             except Exception as e:
                 print(f"[departments] architecture probe error: {e}", file=sys.stderr)
 
@@ -135,13 +147,22 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 findings = run_dependency_probes(repo_root, changed_files)
                 new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-deps", current_slugs)
                 _run_gate(cfg, ddb, status_lines, "dependency", new, dup, reop, supp)
+                # Per-commit mode scans ONLY changed manifests: an unchanged
+                # manifest's findings are absent from this run without being
+                # fixed. Only a FULL scan can attest absence for this source.
+                if changed_files is None:
+                    completed_sources.add("reflex-deps")
             except Exception as e:
                 print(f"[departments] dependency probe error: {e}", file=sys.stderr)
 
         # ---- Contract / Invariant (existing oracles) ----
         if _enabled(cfg, "contract"):
             try:
-                _run_contract_dept(cfg, ddb, sha, status_lines)
+                ran_any = _run_contract_dept(cfg, ddb, sha, status_lines, current_slugs)
+                # Only attest when at least one manifest existed and was checked:
+                # a deleted manifest makes old findings unmeasurable, not fixed.
+                if ran_any:
+                    completed_sources.add("reflex-contract")
             except Exception as e:
                 print(f"[departments] contract probe error: {e}", file=sys.stderr)
 
@@ -154,6 +175,7 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 findings = run_reachability_probes(repo_root)
                 new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-reach", current_slugs)
                 _run_gate(cfg, ddb, status_lines, "reachability", new, dup, reop, supp)
+                completed_sources.add("reflex-reach")
             except Exception as e:
                 print(f"[departments] reachability probe error: {e}", file=sys.stderr)
 
@@ -166,14 +188,17 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 findings = run_billing_probes(repo_root)
                 new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-billing", current_slugs)
                 _run_gate(cfg, ddb, status_lines, "billing", new, dup, reop, supp)
+                completed_sources.add("reflex-billing")
             except Exception as e:
                 print(f"[departments] billing probe error: {e}", file=sys.stderr)
 
-        # ---- Probe-based auto-close ----
-        # Any open arch.gap claim whose slug is absent from this run's findings
-        # is no longer detectable -- close it automatically.
+        # ---- Probe-based auto-close (scoped by source authority) ----
+        # Close ONLY findings recorded by a probe source that completed cleanly
+        # THIS cycle and whose slug the probe no longer produces. See
+        # _autoclose_resolved for why both conditions are load-bearing.
         try:
-            closed = _autoclose_resolved(ddb, current_slugs, sha, cfg.floor)
+            closed = _autoclose_resolved(ddb, current_slugs, sha, cfg.floor,
+                                         completed_sources)
             if closed:
                 status_lines.append(
                     f"[dept:autoclose] probe-resolved={len(closed)} "
@@ -192,33 +217,70 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
     return status_lines
 
 
-def _autoclose_resolved(ddb, current_slugs: set[str], sha: str,
-                         floor: float) -> list[str]:
-    """Close any open arch.gap claim whose slug is not in this run's findings.
+def _opening_source(ddb, subject: str) -> str | None:
+    """The source that recorded the LATEST 'open' status claim for a subject."""
+    try:
+        hist = ddb.history(subject, "status")
+    except Exception:
+        return None
+    opens = [c for c in hist if getattr(c, "value", None) == "open"]
+    if not opens:
+        return None
+    latest = sorted(opens, key=lambda c: (getattr(c, "seq", 0),
+                                          getattr(c, "recorded_at", "")))[-1]
+    return getattr(latest, "source", None)
 
-    The slug is the bare identifier (e.g. 'security-hardcoded-secret-app-api-py-8').
-    The full subject is 'arch.gap:<slug>'. A finding is absent when no probe
-    produced its slug this run, which means the code pattern that opened it is
-    gone -- the fix is already committed.
+
+def _autoclose_resolved(ddb, current_slugs: set[str], sha: str,
+                         floor: float,
+                         completed_sources: set[str] | None = None) -> list[str]:
+    """Close open arch.gap claims that a completed probe no longer detects.
+
+    TWO conditions, both load-bearing (each guards against a way this
+    mechanism could silently destroy real findings):
+
+    1. SOURCE AUTHORITY: the finding's latest 'open' claim must have been
+       recorded by a source in `completed_sources` -- a probe that ran THIS
+       cycle and finished without error. Model-generated findings (Tier-1
+       reviewer, Tier-2 auditor), attack-probe findings, and manual entries
+       are never produced by these probes, so their absence from a probe scan
+       proves nothing; closing them here would erase the whole model-reviewed
+       backlog on the first department run. A crashed probe is excluded the
+       same way: it contributes zero slugs, which is indistinguishable from
+       "found nothing", and crash-as-clean would close every finding of that
+       department as fixed -- health reported but never verified.
+
+    2. ABSENCE: the slug is not in `current_slugs` -- the probe that owns it
+       re-scanned and no longer produces it, meaning the code pattern that
+       opened it is gone and the fix is already committed.
+
+    `completed_sources=None` (legacy call shape) closes NOTHING -- fail-closed,
+    never fail-open.
     """
+    if not completed_sources:
+        return []
     from dd_core.recursive_improvement.gate import collect_open_gaps
     open_gaps = collect_open_gaps(ddb, floor, prefix="arch.gap:")
     closed = []
     for gap in open_gaps:
         subject = gap["subject"]  # e.g. "arch.gap:security-hardcoded-secret-..."
         slug = subject.removeprefix("arch.gap:")
-        if slug not in current_slugs:
-            ddb.assert_claim(
-                subject, "status", "fixed",
-                source="reflex-dept-autoclose",
-                confidence=1.0,
-                author_kind="system",
-                evidence=(
-                    f"probe did not detect slug in scan at commit {sha[:12]}; "
-                    "pattern absent from codebase -- auto-closed"
-                ),
-            )
-            closed.append(slug)
+        if slug in current_slugs:
+            continue  # still detected -- stays open
+        src = _opening_source(ddb, subject)
+        if src not in completed_sources:
+            continue  # no probe that ran cleanly this cycle owns this finding
+        ddb.assert_claim(
+            subject, "status", "fixed",
+            source="reflex-dept-autoclose",
+            confidence=1.0,
+            author_kind="system",
+            evidence=(
+                f"source {src} re-scanned cleanly at commit {sha[:12]} and no "
+                "longer detects this slug; pattern absent -- auto-closed"
+            ),
+        )
+        closed.append(slug)
     return closed
 
 
@@ -237,18 +299,29 @@ def _run_gate(cfg, ddb, status_lines, dept_name, new, dup, reop, supp):
     status_lines.append(line)
 
 
-def _run_contract_dept(cfg, ddb, sha, status_lines):
-    """Wire the existing invariants.py + contracts.py into the department runner."""
+def _run_contract_dept(cfg, ddb, sha, status_lines,
+                       slug_sink: set | None = None) -> bool:
+    """Wire the existing invariants.py + contracts.py into the department runner.
+
+    Returns True when at least one manifest existed and was checked -- the
+    condition under which this source can attest to a finding's absence.
+    Findings recorded here MUST flow into slug_sink like every other
+    department's, or auto-close would treat still-detected contract findings
+    as resolved (the bug fixed alongside source-scoped auto-close).
+    """
     import json
     import os
+
+    ran_any = False
 
     # invariants
     inv_manifest = os.path.join(cfg.repo_root, "invariants.json")
     if os.path.exists(inv_manifest):
         from dd_core.recursive_improvement.invariants import check_invariants
         findings = check_invariants(cfg.repo_root, inv_manifest)
-        new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-contract")
+        new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-contract", slug_sink)
         _run_gate(cfg, ddb, status_lines, "contract-invariants", new, dup, reop, supp)
+        ran_any = True
 
     # contracts -- standalone contracts.json, or "contracts" key in invariants.json
     contracts_manifest = os.path.join(cfg.repo_root, "contracts.json")
@@ -263,8 +336,13 @@ def _run_contract_dept(cfg, ddb, sha, status_lines):
                     contracts_manifest = ""
             except Exception:
                 contracts_manifest = ""
+        else:
+            contracts_manifest = ""
     if contracts_manifest and os.path.exists(contracts_manifest):
         from dd_core.recursive_improvement.contracts import check_contracts
         findings = check_contracts(cfg.repo_root, contracts_manifest)
-        new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-contract")
+        new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-contract", slug_sink)
         _run_gate(cfg, ddb, status_lines, "contract-payloads", new, dup, reop, supp)
+        ran_any = True
+
+    return ran_any

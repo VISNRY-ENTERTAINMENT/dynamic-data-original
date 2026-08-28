@@ -96,7 +96,8 @@ Output **only** a single JSON array, nothing else. Each element:
   "confidence": 0.0,
   "evidence": "path:line / absent-test-name / project-rule id",
   "proposed_action": "one concrete sentence a human could act on",
-  "department": "arch | contract | alignment | debt | general"
+  "department": "arch | contract | alignment | debt | general",
+  "resolved_when": "the OBSERVATION that would show this is fixed (e.g. 'function X validates its input before the query at path:line', 'test Y exists and passes'). REQUIRED: a finding that cannot say what would close it is unfalsifiable and will be treated as advisory, never act-now."
 }
 ```
 

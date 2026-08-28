@@ -89,6 +89,14 @@ def _clean(gap: dict) -> dict | None:
         "area": str(gap.get("area", "")).strip()[:160],
         "evidence": str(gap.get("evidence", "")).strip()[:400],
         "proposed_action": str(gap.get("proposed_action", "")).strip()[:400],
+        # Falsifiability contract: WHAT OBSERVATION would show this finding is
+        # fixed. Deterministic probe findings are implicitly falsifiable (the
+        # probe re-scans and the slug disappears), so probes may omit it. Model
+        # findings (Tier-1/Tier-2) cannot be re-measured by re-running anything,
+        # so their charters should supply it; a finding that cannot say what
+        # would close it is unfalsifiable, and triage should treat unfalsifiable
+        # findings as advisory -- they have no business in act-now.
+        "resolved_when": str(gap.get("resolved_when", "")).strip()[:400],
     }
 
 
@@ -220,7 +228,8 @@ def record_gaps(ddb, gaps: list, sha: str, source: str,
         current = _latest_status(ddb, subject)
         dims = {"title": g["title"], "area": g["area"], "evidence": g["evidence"],
                 "proposed_action": g["proposed_action"], "first_seen_sha": sha,
-                "evidence_verdict": ev_verdict}
+                "evidence_verdict": ev_verdict,
+                "resolved_when": g["resolved_when"]}
 
         # 1. exact slug already open -> refresh, done
         if current in _OPEN_STATES:

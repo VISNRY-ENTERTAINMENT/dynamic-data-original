@@ -5,9 +5,9 @@ reviewed, deployed -- and never executed" failure class. Complements the
 existing wiring check (declared+consumed but never provided); this is the
 inverse (defined and never called).
 
-Origin: a real production incident where a security-critical code path was
-fully implemented, fully unit-tested, and independently reviewed multiple
-times -- but the HTTP handler never extracted its input field from the
+Origin: a real P0 where a security-critical identity path (`tok:` records)
+was fully implemented, unit-tested (142/142), and independently reviewed
+three times -- but the HTTP handler never extracted the field from the
 request body, so no real request could ever reach it. Every review verified
 the logic was correct; none verified the logic was reachable. This probe
 automates the backward-reachability check that would have caught it.

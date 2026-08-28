@@ -121,6 +121,7 @@ Output **only** a single JSON array. Each element:
   "confidence": 0.0,
   "evidence": "files you read that establish this (path:line where possible)",
   "proposed_action": "one concrete sentence a human could turn into a plan item",
-  "department": "security | architecture | dependency | alignment | observability | general"
+  "department": "security | architecture | dependency | alignment | observability | general",
+  "resolved_when": "the OBSERVATION that would show this is fixed (a checkable fact about the repo, not a restatement of the proposal). REQUIRED: a finding that cannot say what would close it is unfalsifiable and will be treated as advisory, never act-now."
 }
 ```
