@@ -7,7 +7,7 @@ __pycache__/
 venv/
 
 # Dynamic Data ledgers are DATA, not source -- never commit them.
-# (This dir holds the live worldstak.ddb + its .bak.)
+# (This dir holds the live example.ddb + its .bak.)
 *.ddb
 *.ddb.bak
 *.pre-v03.bak

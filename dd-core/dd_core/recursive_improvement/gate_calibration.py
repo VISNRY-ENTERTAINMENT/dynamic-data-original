@@ -1,6 +1,6 @@
-"""Ovyero self-calibration -- retire 'the checker that rots into a nag'.
+"""a production governance gate self-calibration -- retire 'the checker that rots into a nag'.
 
-A governance gate (Ovyero) earns its authority only if its violations are
+A governance gate (a production governance gate) earns its authority only if its violations are
 mostly real. Left uncalibrated, a rule that misfires trains the builder to
 reach for ``--no-verify``, and once that reflex forms the gate protects nothing
 -- every real finding is waved through with the noise. The fix is the same
@@ -9,11 +9,11 @@ measure each rule's PRECISION and make a noisy rule surface itself.
 
 Two deterministic inputs, no model:
 
-  * the Ovyero verdicts log (``OVYERO_VERDICTS.md``) -- every rule ID that has
+  * the gate's verdicts log (``GATE_VERDICTS.md``) -- every rule ID that has
     RAISED a violation, and how often.
-  * an overrides ledger (``.ovyero/overrides.jsonl``) -- one JSON object per line
+  * an overrides ledger (``.gate/overrides.jsonl``) -- one JSON object per line
     recording a confirmed false positive: ``{"rule": "SIG-005", "sha": "...",
-    "reason": "multipart upload endpoint, not a real issue"}``. Ovyero (or the
+    "reason": "multipart upload endpoint, not a real issue"}``. a production governance gate (or the
     human, on every ``--no-verify``) appends here; that is the whole feedback
     loop.
 
@@ -93,7 +93,7 @@ def calibrate(repo_root: str, *, verdicts_path: str | None = None,
     vpath = verdicts_path or _find_verdicts(repo_root)
     if not vpath or not os.path.exists(vpath):
         return []
-    opath = overrides_path or os.path.join(repo_root, ".ovyero", "overrides.jsonl")
+    opath = overrides_path or os.path.join(repo_root, ".governance-gate", "overrides.jsonl")
 
     try:
         raised = parse_violations(open(vpath, encoding="utf-8", errors="ignore").read())
@@ -111,12 +111,12 @@ def calibrate(repo_root: str, *, verdicts_path: str | None = None,
             continue
         pure_nag = s["false_positives"] >= s["raised"]
         findings.append({
-            "slug": f"ovyero-rule-noisy-{rule}",
-            "title": (f"Ovyero rule {rule} is {'a pure nag' if pure_nag else 'noisy'}: "
+            "slug": f"governance-gate-rule-noisy-{rule}",
+            "title": (f"a production governance gate rule {rule} is {'a pure nag' if pure_nag else 'noisy'}: "
                       f"raised {s['raised']}x, {s['false_positives']} confirmed false "
                       f"positive(s) (precision {s['precision']}) -- it is training the "
                       f"--no-verify reflex"),
-            "area": "ovyero",
+            "area": "governance-gate",
             "severity": "low",           # advice about tooling -> RECOMMENDED tier
             "confidence": round(min(0.85, 0.5 + fp_rate / 2), 3),
             "evidence": os.path.relpath(vpath, repo_root).replace("\\", "/"),
@@ -129,8 +129,8 @@ def calibrate(repo_root: str, *, verdicts_path: str | None = None,
 
 
 def _find_verdicts(repo_root: str) -> str | None:
-    for cand in ("OVYERO_VERDICTS.md",
-                 os.path.join("ovyero_artifacts", "OVYERO_VERDICTS.md")):
+    for cand in ("GATE_VERDICTS.md",
+                 os.path.join("gate_artifacts", "GATE_VERDICTS.md")):
         p = os.path.join(repo_root, cand)
         if os.path.exists(p):
             return p

@@ -3,7 +3,7 @@
 *Captured 2026-07-14. How a team of AI agents shares one Dynamic Data memory
 safely — authorship, trust, and tamper-evidence. Implemented in dd-core v0.3.*
 
-Borrows the trust architecture from **Ovyero** (aios.visnryentertainment.com/trust):
+Borrows the trust architecture from **a production governance gate** (aios.visnryentertainment.com/trust):
 integrity via a hash chain, authenticity via Ed25519 signatures, and independent
 verification you can run yourself without trusting the store.
 
@@ -20,7 +20,7 @@ trustworthy.
 
 ---
 
-## Two guarantees (the Ovyero split)
+## Two guarantees (a production governance gate split)
 
 **Integrity — the hash chain.** Every claim is chained into an append-only
 ledger: `entry_hash = sha256(content + prev_hash)`. Edit any past claim and its
@@ -108,7 +108,7 @@ authorship, trust ceilings, agent registry, independent verifier, multi-agent de
 Deliberately **not yet** built (documented so nothing is silently missing):
 
 - **External anchoring** — periodically pin the ledger head to an RFC 3161
-  timestamp authority (like Ovyero → DigiCert) so history can't be backdated.
+  timestamp authority (like a production governance gate → DigiCert) so history can't be backdated.
   *Needs an external service; high value for audit.*
 - **Authorization / capability scoping** — which agents may assert which
   predicates (write ACLs), not just how much their claims weigh. *The natural
@@ -120,7 +120,7 @@ Deliberately **not yet** built (documented so nothing is silently missing):
 - **Reputation decay** — auto-adjust an agent's trust ceiling as its claims get
   overruled/retracted, instead of a static number.
 - **Data minimization / sealed claims** — never store secrets/PII in values;
-  store hashes or sealed references (Ovyero logs hashes, never source).
+  store hashes or sealed references (a production governance gate logs hashes, never source).
 - **Online verification mode** — compare the local chain head against an
   authoritative server head to catch server-side tampering too.
 - **Sybil resistance** — bind agent registration to a vouching authority so a

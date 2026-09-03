@@ -77,12 +77,12 @@ describe Lisp. Concretely in dd-core:
 A minimal orthogonal **core** + an open **self-describing extension** = a
 foundation. A fixed struct, however well chosen, is not future-proof.
 
-## Map: WorldStak's Claim already implements most of this
+## Map: ExampleProject's Claim already implements most of this
 
-The `dd-core` toy was deliberately minimal, but the *real* WorldStak `Claim`
+The `dd-core` toy was deliberately minimal, but the *real* ExampleProject `Claim`
 already reaches for the richer set:
 
-| Atom | WorldStak Claim field(s) | dd-core (v0.2) |
+| Atom | ExampleProject Claim field(s) | dd-core (v0.2) |
 |---|---|---|
 | Proposition | subject/entity_ref, predicate/attribute, value, target_entity_ref | subject, predicate, value, obj |
 | Identity | entity-identity resolution, EntityIdentityRow, merge_service | `same_as` claims + `canonical()` |
@@ -94,7 +94,7 @@ already reaches for the richer set:
 | Lifecycle | immutability_class, retracted_claim_id | retracted, supersedes |
 
 Your engine already modeled context, identity, derivation, and lifecycle. The
-foundational set is closer to what WorldStak has than to the six on the
+foundational set is closer to what ExampleProject has than to the six on the
 benchmark slide.
 
 ## Verdict

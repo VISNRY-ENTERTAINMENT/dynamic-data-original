@@ -10,7 +10,7 @@ sourced, confidence-weighted, time-stamped claims and later asks *"what do we
 currently believe about X, and what changed?"* — instead of re-deriving project
 facts every session.
 
-> **Dynamic Data vs governance (e.g. Ovyero/AIOS)** — different layers.
+> **Dynamic Data vs governance (e.g. a production governance gate/AIOS)** — different layers.
 > Governance governs *actions* (is this change safe/allowed?) at the gate.
 > Dynamic Data stores *beliefs* (what's true, who says so, how sure, since when).
 > Governance is the referee; Dynamic Data is the memory.
@@ -40,7 +40,7 @@ dd-core/
   dd_cli.py           # command-line access
   dd_mcp_server.py    # MCP server: 18 tools, exposes the store to an AI
   dd_verify.py        # independent tamper-evidence verifier (like `aios verify`)
-  seed_worldstak.py   # example: load a project's facts
+  seed_example.py   # example: load a project's facts
   tests/              # 33 tests (atoms + hivemind/trust/tamper-evidence)
   pyproject.toml      # optional: pip install -e .
 ```
@@ -55,7 +55,7 @@ ddb = DynamicDataStore("hive.ddb")
 
 key = signing.AgentKey.generate()                 # an agent's Ed25519 identity
 ddb.register_agent("scout", trust_ceiling=0.3, public_key=key.public_hex)
-ddb.assert_claim("worldstak", "head", "abc", source="scout",
+ddb.assert_claim("example_project", "head", "abc", source="scout",
                  confidence=1.0, signer=key)        # signed + trust-capped
 ddb.verify_chain(check_signatures=True)             # integrity + authenticity
 ```

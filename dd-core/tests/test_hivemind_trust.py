@@ -50,9 +50,9 @@ def test_trust_ceiling_caps_low_trust_agent(ddb):
     ddb.register_agent("planner", kind="ai", trust_ceiling=0.95)
     ddb.register_agent("scout", kind="ai", trust_ceiling=0.30)
     # Scout asserts with full confidence, but is only trusted to 0.30.
-    ddb.assert_claim("worldstak", "head", "abc", source="scout", confidence=1.0)
-    ddb.assert_claim("worldstak", "head", "def", source="planner", confidence=0.5)
-    res = ddb.resolve("worldstak", "head")
+    ddb.assert_claim("example_project", "head", "abc", source="scout", confidence=1.0)
+    ddb.assert_claim("example_project", "head", "def", source="planner", confidence=0.5)
+    res = ddb.resolve("example_project", "head")
     assert res.chosen.source == "planner"   # 0.50 (planner) > capped 0.30 (scout)
     assert res.conflict is True
 
@@ -71,7 +71,7 @@ def test_author_kind_recorded(ddb):
 def test_signed_claims_verify(ddb):
     key = signing.AgentKey.generate()
     ddb.register_agent("planner", trust_ceiling=0.95, public_key=key.public_hex)
-    ddb.assert_claim("worldstak", "head", "abc", source="planner", confidence=0.9,
+    ddb.assert_claim("example_project", "head", "abc", source="planner", confidence=0.9,
                      author_kind="ai", signer=key)
     res = ddb.verify_chain(check_signatures=True)
     assert res["ok"] is True and "signatures valid" in res["detail"]
@@ -83,7 +83,7 @@ def test_forged_signature_fails(ddb):
     other = signing.AgentKey.generate()
     # Register the agent with the WRONG public key -> its signature won't verify.
     ddb.register_agent("planner", trust_ceiling=0.95, public_key=other.public_hex)
-    ddb.assert_claim("worldstak", "head", "abc", source="planner", confidence=0.9, signer=key)
+    ddb.assert_claim("example_project", "head", "abc", source="planner", confidence=0.9, signer=key)
     res = ddb.verify_chain(check_signatures=True)
     assert res["ok"] is False and "signature invalid" in res["detail"]
 

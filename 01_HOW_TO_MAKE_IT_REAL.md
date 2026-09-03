@@ -10,7 +10,7 @@ make it personally useful in the AI era, and (2) what about training on it.*
 Dynamic Data is a **model / primitive**, not a storage engine. Building a
 crash-safe database from scratch means reinventing 40 years of durability,
 concurrency, and recovery engineering — and losing on the one thing a truth
-system can't afford (silent data loss). WorldStak already proves you don't need
+system can't afford (silent data loss). ExampleProject already proves you don't need
 to: it runs the Dynamic-Data model as a **layer over Postgres** (the repository
 pattern). Keep storage boring; put the invention in the *model and the read
 semantics*.
@@ -25,7 +25,7 @@ targets."** Test the idea, not the infrastructure.
 
 ### Step 1 — Extract a tiny standalone library (the "dd-core")
 
-Pull the Dynamic-Data core out of WorldStak into a small, domain-agnostic
+Pull the Dynamic-Data core out of ExampleProject into a small, domain-agnostic
 library you can use anywhere:
 
 - `claim(subject, predicate, object, value, source, confidence, t, evidence)`
@@ -88,7 +88,7 @@ three cheap things:
 2. **Ask** — `resolve` / `history` / `conflicts` from wherever you work.
 3. **Plug into where you already are** — expose dd-core as an **MCP server** so
    any AI assistant (Claude, etc.) can read *and write* your claim store as its
-   memory. WorldStak already lives in an MCP-friendly world.
+   memory. ExampleProject already lives in an MCP-friendly world.
 
 That last one is the unlock: an AI that uses your Dynamic-Data store as memory
 makes *your* work easier immediately **and** generates a growing corpus of

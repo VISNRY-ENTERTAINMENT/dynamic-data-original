@@ -148,14 +148,14 @@ def run_all_probes(repo_root: str) -> list[dict]:
     (consequence preview, change-scoped selection) are NOT here -- they need the
     set of changed files and are driven from the CLI.
     """
-    from . import wiring, invariants, contracts, ovyero_calibration, attack_pattern_probe
+    from . import wiring, invariants, contracts, gate_calibration, attack_pattern_probe
     out = []
     for oracle in (
         lambda r: unwired_optional_params(r),      # LOW keyword-only hint (legacy)
         lambda r: wiring.unwired_capabilities(r),   # strong built-but-not-wired
         lambda r: invariants.check_invariants(r),   # passing-facade (opt-in manifest)
         lambda r: contracts.check_contracts(r),     # payload drift (opt-in manifest)
-        lambda r: ovyero_calibration.calibrate(r),  # noisy gate rule (opt-in log)
+        lambda r: gate_calibration.calibrate(r),  # noisy gate rule (opt-in log)
         lambda r: attack_pattern_probe.run_attack_probes(r),  # known attack-pattern shapes (JS/TS)
     ):
         try:

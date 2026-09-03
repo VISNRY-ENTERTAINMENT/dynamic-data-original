@@ -78,7 +78,7 @@ def assert_claim(
 ) -> dict:
     """Record a fact as a claim (append-only; never overwrites).
 
-    subject/predicate/value is the fact (e.g. subject='worldstak',
+    subject/predicate/value is the fact (e.g. subject='example_project',
     predicate='prod_branch', value='blue'). Set `obj` instead of/along with
     value to record a relationship (subject --predicate--> obj). Always give a
     `source` and an honest `confidence` (1.0 only for things you directly

@@ -40,10 +40,10 @@ def main():
           signing.available(), ")")
 
     line("2. Both agents write to the SAME memory - and they DISAGREE")
-    ddb.assert_claim("worldstak", "head_commit", "abc1234", source="scout",
+    ddb.assert_claim("example_project", "head_commit", "abc1234", source="scout",
                      confidence=1.0, author_kind="ai", signer=scout_key,
                      evidence="scout skimmed the log")
-    p_claim = ddb.assert_claim("worldstak", "head_commit", "91790c1", source="planner",
+    p_claim = ddb.assert_claim("example_project", "head_commit", "91790c1", source="planner",
                                confidence=0.8, author_kind="ai", signer=planner_key,
                                evidence="planner ran git log on blue")
     for c in ddb.conflicts():
@@ -52,7 +52,7 @@ def main():
               f"alt={[a['value']+' by '+a['source'] for a in c['alternatives']]}")
 
     line("3. Arbiter resolves by TRUST (not by raw confidence)")
-    res = ddb.resolve("worldstak", "head_commit")
+    res = ddb.resolve("example_project", "head_commit")
     print(f"resolved -> {res.chosen.value}  (source: {res.chosen.source})")
     print(f"why: {res.reason}")
     print("note: scout claimed confidence 1.0 but is trusted only to 0.30, so")

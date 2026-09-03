@@ -1,6 +1,6 @@
 """attack_pattern_probe.py must actually detect the four patterns it claims
 to, and must NOT flag clean equivalents. Fixture files are real minimal
-repros of the four Ovyero findings the probe was built from, not synthetic
+repros of the four a production governance gate findings the probe was built from, not synthetic
 strings -- so a regression here means the probe stopped catching what it was
 built to catch.
 """

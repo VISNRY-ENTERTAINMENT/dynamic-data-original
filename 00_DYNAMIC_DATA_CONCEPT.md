@@ -78,7 +78,7 @@ One primitive, with a few tunable axes. A domain declares a **profile**:
   surfaced, weighted resolution.
 
 "Static" is simply the profile where certainty is pinned and conflict is fatal.
-Same primitive; the domain turns on only the axes it needs. (WorldStak already
+Same primitive; the domain turns on only the axes it needs. (ExampleProject already
 has these axes as `reality_context`, `immutability_class`, `confidence_category`.)
 
 ## The real invention

@@ -2,7 +2,7 @@
 
 The failure class: an invariant that must hold across a WHOLE surface is
 implemented on PART of it, the tests cover the part that works, and it reports
-as done. WorldStak's canonical-read guard is the canonical example -- it was
+as done. ExampleProject's canonical-read guard is the canonical example -- it was
 wired on 2 of 7 endpoints, every test passed, and the hole was invisible until a
 Tier-2 audit read all seven by hand. A hand-written test enumerating today's
 seven endpoints would STILL miss the eighth someone adds next month.

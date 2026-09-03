@@ -183,7 +183,7 @@ in the loop is project-specific except the two charters and the config — the
 gate, recorder, and runner are generic over any `.ddb`. Full tunables and setup:
 `dd-core/SETUP_FOR_ANOTHER_PROJECT.md`.
 
-The reference / first consumer is the WorldStak engine (`tools/reflex/`, wired
+The reference / first consumer is the ExampleProject engine (`tools/reflex/`, wired
 into its `post-commit` hook right after `dd_git_hook.py`); its charters show a
 fully-specialized example — Rule-11 domain purity, live-Postgres coverage, the
 41 cannot-add-later components — that a new project adapts to its own invariants.

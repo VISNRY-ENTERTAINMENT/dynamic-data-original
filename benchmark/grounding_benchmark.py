@@ -37,14 +37,14 @@ from dd_core import DynamicDataStore  # noqa: E402
 # --------------------------------------------------------------------------- #
 FACTS = [
     # subject, predicate, value, source, confidence, observed_at, evidence
-    ("worldstak", "prod_branch", "blue", "ezra", 1.0, "2026-07-14T00:00:00+00:00",
+    ("example_project", "prod_branch", "blue", "ezra", 1.0, "2026-07-14T00:00:00+00:00",
      "blue = production"),
-    ("worldstak", "head_commit", "977623d", "claude-earlier", 0.7, "2026-07-14T18:00:00+00:00",
+    ("example_project", "head_commit", "977623d", "claude-earlier", 0.7, "2026-07-14T18:00:00+00:00",
      "pre-M9B-lock promotion"),
-    ("worldstak", "head_commit", "91790c1", "claude", 1.0, "2026-07-14T22:00:00+00:00",
+    ("example_project", "head_commit", "91790c1", "claude", 1.0, "2026-07-14T22:00:00+00:00",
      "after M9B flag-lock promotion — supersedes 977623d"),
-    ("worldstak", "test_pool", "NullPool", "claude", 1.0, "2026-07-14T00:00:00+00:00",
-     "conftest WORLDSTAK_ENGINE_NULLPOOL=1"),
+    ("example_project", "test_pool", "NullPool", "claude", 1.0, "2026-07-14T00:00:00+00:00",
+     "conftest APP_ENGINE_NULLPOOL=1"),
     ("leshy", "weakness", "fire", "designer", 1.0, "2026-04-16T00:00:00+00:00",
      "CPS_BESTIARY.cps line 47"),
     ("leshy", "weakness", "ice", "telemetry", 0.3, "2026-05-01T00:00:00+00:00",
@@ -132,13 +132,13 @@ class DynamicBackend:
 # correctly. Retrieval adequacy = does the backend expose that capability?
 # --------------------------------------------------------------------------- #
 TASKS = [
-    ("What is WorldStak's prod branch?",                       "worldstak", "prod_branch", "value"),
-    ("Pick the single current value for WorldStak head commit","worldstak", "head_commit", "unique"),
-    ("Who says WorldStak's prod branch is blue?",              "worldstak", "prod_branch", "source"),
+    ("What is ExampleProject's prod branch?",                       "example_project", "prod_branch", "value"),
+    ("Pick the single current value for ExampleProject head commit","example_project", "head_commit", "unique"),
+    ("Who says ExampleProject's prod branch is blue?",              "example_project", "prod_branch", "source"),
     ("How confident are we the Leshy is weak to fire?",        "leshy",     "weakness",    "confidence"),
-    ("What did we believe WorldStak's head commit was at 18:00?","worldstak","head_commit", "time_travel"),
+    ("What did we believe ExampleProject's head commit was at 18:00?","example_project","head_commit", "time_travel"),
     ("Is there disagreement about the Leshy's weakness?",      "leshy",     "weakness",    "conflict"),
-    ("Has WorldStak's head commit changed? To what?",          "worldstak", "head_commit", "history"),
+    ("Has ExampleProject's head commit changed? To what?",          "example_project", "head_commit", "history"),
 ]
 
 CAP = {

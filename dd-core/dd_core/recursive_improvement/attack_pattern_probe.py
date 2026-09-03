@@ -1,13 +1,12 @@
 """Deterministic attack-pattern probe. NO model at all.
 
 Same doctrine as the other structural probes (probes.py, wiring.py,
-ovyero_calibration.py): compute a FACT about the code with a regex/text scan,
+gate_calibration.py): compute a FACT about the code with a regex/text scan,
 not a judgment call, and record it with source `reflex-probe` so a model is
 never in this discovery path either.
 
-Origin: built from a real static security review of the Ovyero governance
-server (OVYERO_SECURITY_REVIEW.md) cross-checked against a hand-built attack
-technique corpus (UVE_ATTACK_TEST_CORPUS.md, MITRE ATT&CK-mapped). Every
+Origin: built from a real static security review of a production governance server (an internal security review) cross-checked against a hand-built attack
+technique corpus (an attack-technique corpus, MITRE ATT&CK-mapped). Every
 pattern below is something that was actually found in real, shipped code
 during that review -- not a hypothetical vulnerability class. The value of
 this probe is turning a one-time audit into a standing, automatic check: the
@@ -29,12 +28,12 @@ in runner.py):
     legitimate reason to base64-decode a bare module-name string immediately
     before require()/import -- this is either intentional evasion of naive
     string-matching review tooling (ATT&CK T1036, and the exact pattern found
-    in Ovyero's own authMiddleware.js/file-govern.js/session-govern.js/
+    in a production governance server's auth/file/session/
     secure-server.js) or, generously, a strange stylistic choice with the
     identical shape as an attack technique. Either way it earns a look.
   * presence_only_auth_check     -- capped at 0.5 (below the 0.6 default
     floor -- see config.py -- so it does NOT auto-escalate by default). This
-    is the real, previously-confirmed pattern behind Ovyero's own
+    is the real, previously-confirmed pattern behind a production governance server's
     `/api/bootstrap` auth-bypass finding (checks a credential-shaped value is
     NON-EMPTY, never checks it against a key store), but proving "never
     validated ANYWHERE in this function" from a regex is inherently
@@ -43,11 +42,11 @@ in runner.py):
     a project explicitly lowers its floor.
   * unbounded_regexp_from_request -- 0.5, same reasoning: `new RegExp(x)`
     where `x` is traced to req.body/req.query is the real shape of the ReDoS
-    finding in Ovyero's policy-enforce.js, but whether `x` is actually
+    finding in a production policy-enforcement module, but whether `x` is actually
     attacker-reachable at that specific call site needs a human's read.
   * unescaped_html_concat        -- 0.5, same reasoning: string concatenation
     feeding innerHTML with a request-derived field is the real shape of
-    Ovyero's stored-XSS finding, but distinguishing "session.id" (server-
+    a real stored-XSS finding, but distinguishing "session.id" (server-
     trusted) from "req.body.sessionId" (attacker-controlled) reliably needs
     more context than a regex window reliably has.
 """
@@ -64,7 +63,7 @@ _JS_LIKE_EXTS = {".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"}
 
 # --- pattern 1: obfuscated dynamic require/import ---------------------------
 # require(Buffer.from('...', 'base64').toString(...))  -- the exact shape
-# found in Ovyero's own authMiddleware.js/file-govern.js/session-govern.js/
+# found in a production governance server's auth/file/session/
 # secure-server.js. Also matches the atob() browser-side equivalent.
 _OBFUSCATED_REQUIRE = re.compile(
     r"require\s*\(\s*Buffer\.from\([^)]*['\"]base64['\"]"
@@ -75,7 +74,7 @@ _OBFUSCATED_REQUIRE = re.compile(
 # `if (!x && !y) { ...401/unauthorized... }` where x/y come from a body/header
 # credential field, with NOTHING that looks like a validity check (compare/
 # verify/validate/hash/lookup/find against a store) within the same nearby
-# window. This mirrors Ovyero's /api/bootstrap: presence of `body.apiKey` /
+# window. This mirrors a production bootstrap endpoint: presence of `body.apiKey` /
 # `x-api-key` header is checked, but the value is never looked up anywhere.
 _CRED_PRESENCE_CHECK = re.compile(
     r"if\s*\(\s*!\s*[\w.\-\[\]'\"]*(?:apiKey|api_key|token|secret|credential)"
@@ -192,7 +191,7 @@ def presence_only_auth_check(repo_root: str) -> list[dict]:
 
 
 def unbounded_regexp_from_request(repo_root: str) -> list[dict]:
-    """The policy-enforce.js ReDoS shape: new RegExp() built from a variable,
+    """The policy-enforcement ReDoS shape: new RegExp() built from a variable,
     in a file that also references request-derived input, with no visible
     length/complexity guard on the pattern before compilation."""
     findings = []

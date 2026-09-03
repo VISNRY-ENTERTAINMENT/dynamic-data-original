@@ -39,13 +39,13 @@ are false positives, and `metrics.py` reports each source's precision + noise.
 | 1 | **Wiring Prover** | analyzer | built-but-not-wired | ✅ shipped |
 | 2 | **Differential Oracle** | testkit | backend-only drift (in-memory green, real backend breaks) | ✅ shipped |
 | 3 | **Invariant Manifests** | analyzer | the passing façade (partial invariant reported as done) | ✅ shipped |
-| 4 | **Ovyero self-calibration** | (Ovyero + ledger) | the checker that rots into a nag / rubber stamp | ✅ shipped |
+| 4 | **a production governance gate self-calibration** | (a production governance gate + ledger) | the checker that rots into a nag / rubber stamp | ✅ shipped |
 | 5 | **State-Leak Detector** | testkit | nondeterministic / order-dependent tests | ✅ shipped |
 | 6 | **Change-scoped verify** | testkit | slow, coarse feedback → risky batches | ✅ shipped |
 | 7 | **Spec-derived contracts** | analyzer | silent producer/consumer interface drift | ✅ shipped |
 | 8 | **Consequence Preview** | analyzer | blast-radius blindness / not future-proof | ✅ shipped |
 
-Ordered by leverage × how often it bit the WorldStak build. #1–#3 retire the two
+Ordered by leverage × how often it bit the ExampleProject build. #1–#3 retire the two
 costliest classes (built-but-not-wired, backend drift) and the credibility killer
 (the passing façade).
 
@@ -56,14 +56,14 @@ costliest classes (built-but-not-wired, backend drift) and the credibility kille
 | Wiring Prover | `dd_core/recursive_improvement/wiring.py` | `dd_ri wiring [--record]`, also in `dd_ri probe` |
 | Invariant Manifests | `dd_core/recursive_improvement/invariants.py` | `invariants.json` + `dd_ri probe` |
 | Spec-derived contracts | `dd_core/recursive_improvement/contracts.py` | `contracts.json` + `dd_ri probe` |
-| Ovyero self-calibration | `dd_core/recursive_improvement/ovyero_calibration.py` | `.ovyero/overrides.jsonl` + `dd_ri probe` |
+| a production governance gate self-calibration | `dd_core/recursive_improvement/gate_calibration.py` | `.gate/overrides.jsonl` + `dd_ri probe` |
 | Consequence Preview | `dd_core/recursive_improvement/consequence.py` | `dd_ri blast [--changed ...]` |
 | Differential Oracle | `dd_core/testkit/differential.py` | `differential` fixture (plugin) |
 | State-Leak Detector | `dd_core/testkit/state_leak.py` | autouse (plugin); `--dd-leak-fail` to enforce |
 | Change-scoped verify | `dd_core/testkit/selection.py` | `dd_ri select [--changed ...]` |
 
 `dd_ri probe` fans out every whole-repo analyzer (Wiring, Invariants, Contracts,
-Ovyero calibration) in one call; the manifest/log-driven ones no-op with zero
+a production governance gate calibration) in one call; the manifest/log-driven ones no-op with zero
 noise until a project opts in by adding the config file. Enable the testkit with
 `pytest -p dd_core.testkit.plugin`.
 
@@ -73,7 +73,7 @@ noise until a project opts in by adding the config file. Enable the testkit with
   never-provided across the whole tree. Upgrades the keyword-only `probes.py`
   primitive with positional/assignment provider detection + a consumer
   requirement, so findings are real (medium confidence), not LOW hints. CLI:
-  `dd_ri wiring`. Validated against WorldStak.
+  `dd_ri wiring`. Validated against ExampleProject.
 - **Phase B — testkit skeleton + Differential Oracle.** `dd_core/testkit/`
   pytest plugin; a `differential` fixture that runs one scenario against two
   backends and asserts equivalence.
@@ -81,8 +81,8 @@ noise until a project opts in by adding the config file. Enable the testkit with
   (e.g. `invariants.toml`: `canonical_reads = [<endpoints>]`); analyzer checks
   the code covers the whole set. Generalizes the hand-written wiring-lock tests.
 - **Phase D — State-Leak Detector + Change-scoped selection** (testkit).
-- **Phase E — Ovyero self-calibration.** Feed every `--no-verify`/override back
-  as a per-rule false-positive claim; Ovyero rules get a precision meter.
+- **Phase E — a production governance gate self-calibration.** Feed every `--no-verify`/override back
+  as a per-rule false-positive claim; a production governance gate rules get a precision meter.
 - **Phase F — Spec-derived contracts, Consequence Preview.** Highest ceiling,
   highest effort; do once the deterministic base is load-bearing.
 
@@ -94,7 +94,7 @@ one adapter seam that carries language specifics.
 - **Domain / industry agnostic.** No oracle knows what the software *does*. They
   reason about code structure (a capability read but never provided; a blast
   radius; a declared invariant's surface), never business meaning — the same
-  Rule-11 discipline WorldStak itself holds. A legal, medical, or game codebase
+  Rule-11 discipline ExampleProject itself holds. A legal, medical, or game codebase
   gets identical treatment; project-specific rules live in that project's
   `invariants.json` / `contracts.json`, never in the engine.
 

@@ -130,9 +130,9 @@ def test_determined_latest_observation_wins(ddb):
 
 
 def test_search_and_subjects(ddb):
-    ddb.assert_claim("worldstak", "test_pool", "NullPool", source="ezra", confidence=1.0,
-                     evidence="conftest sets WORLDSTAK_ENGINE_NULLPOOL=1")
-    ddb.assert_claim("worldstak", "prod_branch", "blue", source="ezra", confidence=1.0)
-    assert "worldstak" in ddb.subjects()
+    ddb.assert_claim("example_project", "test_pool", "NullPool", source="ezra", confidence=1.0,
+                     evidence="conftest sets APP_ENGINE_NULLPOOL=1")
+    ddb.assert_claim("example_project", "prod_branch", "blue", source="ezra", confidence=1.0)
+    assert "example_project" in ddb.subjects()
     hits = ddb.search(text="NullPool")
     assert len(hits) == 1 and hits[0].value == "NullPool"

@@ -4,7 +4,7 @@ The failure class: a scenario passes against the fast in-memory fake but breaks
 against the real backend (Postgres, an HTTP peer, a file store), because the two
 implementations silently diverge on ordering, rounding, null handling, or a
 dropped field. The in-memory suite is green, so nobody looks -- until it breaks
-in production. This was WorldStak's second-costliest class (EntityRow.to_domain
+in production. This was ExampleProject's second-costliest class (EntityRow.to_domain
 dropping merge state; confidence losing scale on persist): every instance was a
 place where 'passes in memory' and 'is actually correct' came apart.
 

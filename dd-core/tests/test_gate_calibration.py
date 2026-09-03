@@ -1,4 +1,4 @@
-"""Tests for Ovyero self-calibration (dd_core.recursive_improvement.ovyero_calibration)."""
+"""Tests for a production governance gate self-calibration (dd_core.recursive_improvement.gate_calibration)."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ import json
 import os
 import tempfile
 
-from dd_core.recursive_improvement import ovyero_calibration as oc
+from dd_core.recursive_improvement import gate_calibration as oc
 
 
-_VERDICTS = """# Ovyero Verdicts
+_VERDICTS = """# a production governance gate Verdicts
 
 ## 2026-07-14 commit A
 ### Violations
@@ -47,11 +47,11 @@ def test_rule_stats_precision():
 
 def _mk(verdicts: str, overrides: list[dict] | None):
     root = tempfile.mkdtemp(prefix="ovcal-")
-    with open(os.path.join(root, "OVYERO_VERDICTS.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(root, "GATE_VERDICTS.md"), "w", encoding="utf-8") as fh:
         fh.write(verdicts)
     if overrides is not None:
-        os.makedirs(os.path.join(root, ".ovyero"), exist_ok=True)
-        with open(os.path.join(root, ".ovyero", "overrides.jsonl"), "w", encoding="utf-8") as fh:
+        os.makedirs(os.path.join(root, ".governance-gate"), exist_ok=True)
+        with open(os.path.join(root, ".governance-gate", "overrides.jsonl"), "w", encoding="utf-8") as fh:
             for o in overrides:
                 fh.write(json.dumps(o) + "\n")
     return root
@@ -65,10 +65,10 @@ def test_noisy_rule_is_flagged_clean_rule_is_not():
     ])
     found = oc.calibrate(root)
     slugs = {f["slug"] for f in found}
-    assert "ovyero-rule-noisy-SIG-005" in slugs
+    assert "governance-gate-rule-noisy-SIG-005" in slugs
     # OWASP-012 raised once (below min_raised) and never overridden -> not flagged
     assert not any("OWASP-012" in s for s in slugs)
-    finding = next(f for f in found if f["slug"] == "ovyero-rule-noisy-SIG-005")
+    finding = next(f for f in found if f["slug"] == "governance-gate-rule-noisy-SIG-005")
     assert finding["severity"] == "low"          # RECOMMENDED tier
     assert "pure nag" in finding["title"]
 

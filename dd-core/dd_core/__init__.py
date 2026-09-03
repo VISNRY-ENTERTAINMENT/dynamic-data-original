@@ -6,10 +6,10 @@ relationships. Facts accumulate; truth is computed on read.
     from dd_core import DynamicDataStore, Profile
 
     ddb = DynamicDataStore("project.ddb")
-    ddb.assert_claim("worldstak", "test_pool", "NullPool",
+    ddb.assert_claim("example_project", "test_pool", "NullPool",
                      source="ezra", confidence=1.0,
-                     evidence="conftest.py sets WORLDSTAK_ENGINE_NULLPOOL=1")
-    print(ddb.resolve("worldstak", "test_pool").chosen.value)   # -> "NullPool"
+                     evidence="conftest.py sets APP_ENGINE_NULLPOOL=1")
+    print(ddb.resolve("example_project", "test_pool").chosen.value)   # -> "NullPool"
 """
 
 from .models import (

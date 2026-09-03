@@ -33,4 +33,4 @@ packages = [
     "dd_core.codefacts",
     "dd_core.reflex",
 ]
-py-modules = ["dd_cli", "dd_mcp_server", "seed_worldstak"]
+py-modules = ["dd_cli", "dd_mcp_server", "seed_example"]
