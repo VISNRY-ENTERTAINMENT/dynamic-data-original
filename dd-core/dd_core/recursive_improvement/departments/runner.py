@@ -14,6 +14,9 @@ Department -> oracle mapping:
   contract      -- existing invariants.py + contracts.py (manifest-driven)
   reachability  -- reachability_probe.run_reachability_probes (exported-never-consumed)
   billing       -- billing_probe.run_billing_probes (billing-path-filtered)
+  network       -- network_probe.run_network_probes (bind/publish/debug/IaC exposure)
+  contract_drift-- contract_drift_probe.run_contract_drift_probes (external-API drift preconditions)
+  state_coverage-- state_coverage_probe.run_state_coverage_probes (partial registry/enum coverage)
   goal_alignment-- no deterministic oracle; handled by Tier-1 charter lens
 
 goal_alignment has no deterministic oracle: it requires reasoning about intent
@@ -191,6 +194,45 @@ def run_department_probes(cfg: "ReflexConfig", sha: str,
                 completed_sources.add("reflex-billing")
             except Exception as e:
                 print(f"[departments] billing probe error: {e}", file=sys.stderr)
+
+        # ---- Network exposure (bind/publish/debug/IaC reachability) ----
+        if _enabled(cfg, "network"):
+            try:
+                from dd_core.recursive_improvement.departments.network_probe import (
+                    run_network_probes,
+                )
+                findings = run_network_probes(repo_root)
+                new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-network", current_slugs)
+                _run_gate(cfg, ddb, status_lines, "network", new, dup, reop, supp)
+                completed_sources.add("reflex-network")
+            except Exception as e:
+                print(f"[departments] network probe error: {e}", file=sys.stderr)
+
+        # ---- Contract drift (external-API drift preconditions) ----
+        if _enabled(cfg, "contract_drift"):
+            try:
+                from dd_core.recursive_improvement.departments.contract_drift_probe import (
+                    run_contract_drift_probes,
+                )
+                findings = run_contract_drift_probes(repo_root)
+                new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-drift", current_slugs)
+                _run_gate(cfg, ddb, status_lines, "contract_drift", new, dup, reop, supp)
+                completed_sources.add("reflex-drift")
+            except Exception as e:
+                print(f"[departments] contract_drift probe error: {e}", file=sys.stderr)
+
+        # ---- State coverage (partial registry/enum coverage) ----
+        if _enabled(cfg, "state_coverage"):
+            try:
+                from dd_core.recursive_improvement.departments.state_coverage_probe import (
+                    run_state_coverage_probes,
+                )
+                findings = run_state_coverage_probes(repo_root)
+                new, dup, reop, supp = _record(cfg, ddb, findings, sha, "reflex-state", current_slugs)
+                _run_gate(cfg, ddb, status_lines, "state_coverage", new, dup, reop, supp)
+                completed_sources.add("reflex-state")
+            except Exception as e:
+                print(f"[departments] state_coverage probe error: {e}", file=sys.stderr)
 
         # ---- Probe-based auto-close (scoped by source authority) ----
         # Close ONLY findings recorded by a probe source that completed cleanly

@@ -157,6 +157,26 @@ def cmd_doctor(args):
             except Exception:
                 problems.append(f"{name} charter unreadable: {path}")
 
+    # 5. is the post-commit hook actually WIRED? WOULD FIRE previously meant
+    #    "would fire if invoked" -- but nothing invokes the loop unless the
+    #    hook block exists. Found the hard way (2026-08-29): a repo passed
+    #    doctor, yet a Closes-tagged commit never reached autoclose because
+    #    init --wire-hook had never been run there. The verdict must not
+    #    claim more reachability than it observed.
+    hook_path = os.path.join(repo, ".git", "hooks", "post-commit")
+    try:
+        hook_text = open(hook_path, encoding="utf-8").read() \
+            if os.path.exists(hook_path) else ""
+    except Exception:
+        hook_text = ""
+    if _HOOK_MARKER in hook_text:
+        notes.append("hook: post-commit WIRED (reflex block present)")
+    else:
+        problems.append(
+            "hook: post-commit NOT WIRED -- the loop only runs when a session "
+            "invokes it by hand; commits (and their Closes tags) never reach "
+            "autoclose. Run `dd_ri.py init --repo-root .` to wire it.")
+
     print("=" * 68)
     print(f"reflex doctor — {repo}")
     print("=" * 68)

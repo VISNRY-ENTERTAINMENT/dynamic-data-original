@@ -1,14 +1,28 @@
-"""Deterministic auto-close: a commit that says it closed a finding, closes it.
+"""Deterministic auto-close: a commit that says it closed a finding, CLAIMS it.
 
 NO model in this path. When a commit message contains
 "Closes|Fixes|Resolves <prefix><slug>" (the GitHub-issue convention), the
-matching ledger finding is marked `fixed`, cited to that commit's SHA. This is
-what keeps the backlog from filling with stale entries: the moment a fix ships
-referencing a finding, the finding stops being open -- automatically, with no
-human having to remember to update the ledger.
+matching ledger finding is marked `claimed-fixed`, cited to that commit's SHA.
+This keeps the backlog from filling with stale entries without pretending the
+mention was a verification.
+
+Why `claimed-fixed` and not `fixed` (2026-08-28, MSG-1754 closure audit): a
+commit-message mention is the AUTHOR restating their own claim -- the evidence
+string produced here quotes the claim, it does not observe the fix. Treating
+mention as verification made the ledger's evidence channel an echo: any commit
+saying "Closes X" closed X, verified by nothing. A full backward-trace of 24
+such closures found one false-by-default and five with no locatable artifact.
+
+Promotion to `fixed` requires machine-resolved evidence -- see promote.py:
+the promoter reads the cited file:line, resolves the cited commit, or
+greps/executes the cited test, and records WHICH verb was used so the
+promotion's strength stays legible. Probe-owned findings have a second honest
+path: departments/runner._autoclose_resolved marks `fixed` directly when the
+owning probe re-scans cleanly and no longer detects the slug -- that IS an
+observation, not a mention.
 
 Findings the loop cannot verify as fixed simply stay open (or backlogged). This
-never re-opens or invents anything; it only closes what a commit explicitly
+never re-opens or invents anything; it only records what a commit explicitly
 claims to have closed.
 """
 
@@ -43,18 +57,21 @@ def subjects_closed_by_message(message: str) -> list[str]:
 
 def autoclose_from_commit(ddb, message: str, sha: str,
                           source: str = "reflex-autoclose") -> list[str]:
-    """Mark every finding a commit says it closed as `fixed`. Returns the
-    subjects actually transitioned (already-closed ones are skipped)."""
+    """Mark every finding a commit says it closed as `claimed-fixed`.
+    Returns the subjects actually transitioned (already-closed ones are
+    skipped). Promotion to `fixed` happens in promote.py against
+    machine-resolved evidence, never here."""
     closed = []
     for subject in subjects_closed_by_message(message):
         # only real findings that exist in the ledger and are still open
         if _latest_status(ddb, subject) not in ("open", "escalated"):
             continue
         ddb.assert_claim(
-            subject, "status", "fixed", source=source, confidence=1.0,
+            subject, "status", "claimed-fixed", source=source, confidence=1.0,
             author_kind="system",
-            evidence=f"auto-closed by commit {sha[:12]}: message referenced "
-                     f"this finding with a close verb",
+            evidence=f"claimed closed by commit {sha[:12]}: message referenced "
+                     f"this finding with a close verb (mention-only -- promote "
+                     f"to fixed via machine-resolved evidence, see promote.py)",
         )
         closed.append(subject)
     return closed

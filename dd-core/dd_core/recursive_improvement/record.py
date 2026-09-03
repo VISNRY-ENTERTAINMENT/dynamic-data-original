@@ -22,7 +22,11 @@ import json
 import re
 
 _OPEN_STATES = {"open", "escalated"}
-_CLOSED_STATES = {"fixed", "wontfix", "accepted"}
+# claimed-fixed counts as closed for dedup/reopen purposes: a probe
+# re-detecting a claimed-fixed slug is evidence the claim was false, and the
+# recurrence path reopens it -- exactly the semantics a mention-only close
+# deserves (see autoclose.py / promote.py, 2026-08-28).
+_CLOSED_STATES = {"fixed", "wontfix", "accepted", "claimed-fixed"}
 _VALID_SEV = {"low", "medium", "high", "critical"}
 
 # Similarity thresholds (deterministic). Conservative on purpose: a false merge
